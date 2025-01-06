@@ -3,9 +3,10 @@ import { NavLink } from "react-router";
 import QRCode from "qrcode";
 import { db } from "../util/firebase";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { getUUID } from "../util/uuid";
 
 const Receiver = () => {
-	const [id] = useState(crypto.randomUUID());
+	const [id] = useState(getUUID());
 	const [qrData, setQrData] = useState("");
 	const dataChannelRef = useRef<RTCDataChannel>();
 	const peerConnectionRef = useRef<RTCPeerConnection>();
@@ -30,8 +31,12 @@ const Receiver = () => {
 		initializeDataChannel(newDataChannel);
 
 		peerConnectionRef.current.onicecandidate = async (event) => {
-			if (!event.candidate || !peerConnectionRef.current) {
-				console.error("Event candidate failed");
+			console.log(event);
+			if (!peerConnectionRef.current) {
+				console.error("Peer connection not ready");
+				return;
+			}
+			if (!event.candidate) {
 				return;
 			}
 			const offerSDP = peerConnectionRef.current.localDescription?.sdp;
@@ -61,7 +66,7 @@ const Receiver = () => {
 
 				const answerSDP = data.answer;
 				if (!answerSDP) {
-					console.error("No answer found");
+					console.warn("No answer found");
 					return;
 				}
 
