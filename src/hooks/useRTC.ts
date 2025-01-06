@@ -1,30 +1,33 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Result } from "../util/result";
 
-const useRTC = () => {
+type UseRTCProps = {
+	onMessage: (message: MessageEvent) => void;
+};
+
+const useRTC = (props: UseRTCProps) => {
 	const dataChannelRef = useRef<RTCDataChannel>();
 	const peerConnectionRef = useRef<RTCPeerConnection>();
 	const [connectionState, setConnectionState] = useState<
 		RTCIceConnectionState | undefined
 	>("disconnected");
 
-	const initializeDataChannel = (channel: RTCDataChannel) => {
-		dataChannelRef.current = channel;
-		dataChannelRef.current.onopen = () => console.log("Channel opened");
-		dataChannelRef.current.onmessage = (event) => console.log("event", event);
-	};
+	const [offer, setOffer] = useState<RTCSessionDescriptionInit | undefined>();
+	const [answer, setAnswer] = useState<RTCSessionDescriptionInit | undefined>();
 
-	const createDataChannel = (label: string): Result<boolean> => {
-		if (!peerConnectionRef.current) {
-			return { variant: "error", error: "Peer connection not ready." };
+	const initializeConnection = useCallback(() => {
+		if (peerConnectionRef.current) {
+			return;
 		}
-		const newDataChannel = peerConnectionRef.current.createDataChannel(label);
-		initializeDataChannel(newDataChannel);
-		return { variant: "ok", value: true };
-	};
 
-	// Initialize the connection object
-	const initializeConnection = () => {
+		const initializeDataChannel = (channel: RTCDataChannel) => {
+			dataChannelRef.current = channel;
+			dataChannelRef.current.onopen = () => console.log("Channel opened");
+			dataChannelRef.current.onmessage = (event) => {
+				props.onMessage(event);
+			};
+		};
+
 		const server = { urls: "stun:stun.l.google.com:19302" };
 		peerConnectionRef.current = new RTCPeerConnection({ iceServers: [server] });
 		peerConnectionRef.current.ondatachannel = (event) =>
@@ -33,30 +36,64 @@ const useRTC = () => {
 			setConnectionState(peerConnectionRef.current?.iceConnectionState);
 			console.log(peerConnectionRef.current?.iceConnectionState);
 		};
-	};
+		const newDataChannel = peerConnectionRef.current.createDataChannel("chat");
+		initializeDataChannel(newDataChannel);
+		return { variant: "ok", value: true };
+	}, [props]);
 
-	const setRemoteOffer = async (
-		remoteOfferSDP: string
-	): Promise<Result<string>> => {
+	const closeConnection = useCallback((): Result<boolean> => {
+		if (!peerConnectionRef.current) {
+			return { variant: "ok", value: true };
+		}
+		peerConnectionRef.current.close();
+		return { variant: "ok", value: true };
+	}, []);
+
+	const setRemoteDescription = async (
+		description: RTCSessionDescriptionInit
+	): Promise<Result<boolean>> => {
 		if (!peerConnectionRef.current) {
 			return { variant: "error", error: "Peer connection not ready." };
 		}
-		const description = new RTCSessionDescription({
-			type: "offer",
-			sdp: remoteOfferSDP,
-		});
-		await peerConnectionRef.current.setRemoteDescription(description);
 
-		// Set the local description
+		try {
+			console.log("here");
+			await peerConnectionRef.current.setRemoteDescription(description);
+			// catch the operationError
+		} catch (e) {
+			return { variant: "error", error: (e as Error).message };
+		}
+
+		// If the description is an answer, we are done
+		if (description.type === "answer") {
+			setAnswer(description);
+			if (!peerConnectionRef.current.localDescription) {
+				return { variant: "error", error: "Local description not found." };
+			}
+			return {
+				variant: "ok",
+				value: true,
+			};
+		}
+
+		// If the description is an offer, create an answer
 		const answer = await peerConnectionRef.current.createAnswer();
 		if (!answer.sdp) {
 			return { variant: "error", error: "Failed to create answer SDP." };
 		}
 		await peerConnectionRef.current.setLocalDescription(answer);
-		return { variant: "ok", value: answer.sdp };
+
+		peerConnectionRef.current.onicecandidate = (event) => {
+			if (event.candidate) return;
+			if (!peerConnectionRef.current) return;
+			if (peerConnectionRef.current.localDescription) {
+				setAnswer(peerConnectionRef.current.localDescription);
+			}
+		};
+		return { variant: "ok", value: true };
 	};
 
-	const createOffer = async (): Promise<Result<string>> => {
+	const createOffer = useCallback(async (): Promise<Result<string>> => {
 		if (!peerConnectionRef.current) {
 			return { variant: "error", error: "Peer connection not ready." };
 		}
@@ -65,7 +102,37 @@ const useRTC = () => {
 			return { variant: "error", error: "Failed to create offer SDP." };
 		}
 		await peerConnectionRef.current.setLocalDescription(offer);
+		setOffer(offer);
 		return { variant: "ok", value: offer.sdp };
+	}, []);
+
+	const sendMessage = (data: string): Result<boolean> => {
+		if (!dataChannelRef.current) {
+			return { variant: "error", error: "Data channel not ready." };
+		}
+		if (dataChannelRef.current.readyState !== "open") {
+			return { variant: "error", error: "Data channel not open." };
+		}
+		dataChannelRef.current.send(data);
+		return { variant: "ok", value: true };
+	};
+
+	useEffect(() => {
+		initializeConnection();
+
+		return () => {
+			closeConnection();
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	return {
+		connectionState,
+		offer,
+		createOffer,
+		answer,
+		setRemoteDescription,
+		sendMessage,
 	};
 };
 

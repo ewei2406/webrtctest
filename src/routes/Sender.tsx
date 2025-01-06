@@ -1,120 +1,70 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Html5Qrcode } from "html5-qrcode";
-import { useRef, useEffect, useState } from "react";
+import { useState } from "react";
 import { NavLink } from "react-router";
-import { db } from "../util/firebase";
-import useQRScanner from "../hooks/useQRScanner";
+import useRTC from "../hooks/useRTC";
 
 const Sender = () => {
-	const { scannerState, startScanner } = useQRScanner({
-		elementId: "reader",
-		onScan: (data) => {
-			console.log(data);
-		},
-	});
+	const [chat, setChat] = useState<{ msg: string; id: string | number }[]>([]);
+	const [offerSDP, setOfferSDP] = useState<string>("");
+	const [chatInput, setChatInput] = useState<string>("");
+	const [error, setError] = useState<string | null>(null);
 
-	const [connectionState, setConnectionState] = useState<
-		RTCIceConnectionState | undefined
-	>("disconnected");
-	const dataChannelRef = useRef<RTCDataChannel>();
-	const peerConnectionRef = useRef<RTCPeerConnection>();
+	const { connectionState, setRemoteDescription, answer, sendMessage } = useRTC(
+		{
+			onMessage: (msg) => {
+				setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
+			},
+		}
+	);
 
-	const initializeDataChannel = (channel: RTCDataChannel) => {
-		dataChannelRef.current = channel;
-		dataChannelRef.current.onopen = () => console.log("Channel opened");
-		dataChannelRef.current.onmessage = (event) => console.log("event", event);
+	const submitOffer = async () => {
+		const result = await setRemoteDescription({
+			type: "offer",
+			sdp: offerSDP,
+		});
+		if (result.variant === "error") {
+			setError(result.error);
+		}
 	};
 
-	useEffect(() => {
-		// Initialize the connection object
-		const server = { urls: "stun:stun.l.google.com:19302" };
-		peerConnectionRef.current = new RTCPeerConnection({ iceServers: [server] });
-		peerConnectionRef.current.ondatachannel = (event) =>
-			initializeDataChannel(event.channel);
-		peerConnectionRef.current.oniceconnectionstatechange = () => {
-			setConnectionState(peerConnectionRef.current?.iceConnectionState);
-			console.log(peerConnectionRef.current?.iceConnectionState);
-		};
-
-		// Start the QR code reader
-		const qrCodeSuccessCallback = async (decodedText: string) => {
-			console.log(peerConnectionRef.current);
-			if (connectionState !== "disconnected") {
-				console.warn("Connection already established.");
-				return;
-			}
-			if (!peerConnectionRef.current) {
-				console.error("Peer connection not ready.");
-				return;
-			}
-
-			// If connection isn't stable stop
-			if (peerConnectionRef.current.signalingState !== "stable") {
-				console.warn("Connection state not stable yet.");
-				return;
-			}
-
-			const receiverUUID = decodedText;
-
-			// Get the doc from firestore
-			const docRef = doc(db, "sdp", receiverUUID);
-			const query = await getDoc(docRef);
-			const data = query.data();
-
-			// Retreive the offer SDP
-			if (!data || !data.offer) {
-				console.error("No offer found.");
-				return;
-			}
-			const offerSDP = data.offer as string;
-
-			const description = new RTCSessionDescription({
-				type: "offer",
-				sdp: offerSDP,
-			});
-
-			peerConnectionRef.current.onicecandidate = async (event) => {
-				if (!peerConnectionRef.current) {
-					console.error("Peer connection not ready.");
-					return;
-				}
-				if (!event.candidate) {
-					console.warn("No candidate present.");
-					return;
-				}
-
-				const answerSDP = peerConnectionRef.current.localDescription?.sdp;
-				if (!answerSDP) {
-					console.error("Failed to create answer SDP.");
-					return;
-				}
-
-				// Create the doc in firestore with the answer
-				await setDoc(docRef, {
-					answer: answerSDP,
-				});
-			};
-
-			await peerConnectionRef.current.setRemoteDescription(description);
-			const answer = await peerConnectionRef.current.createAnswer();
-			await peerConnectionRef.current.setLocalDescription(answer);
-		};
-
-		const qrCodeErrorCallback = () => {};
-
-		startScanner();
-	}, []);
+	const sendChat = () => {
+		setChat((prev) => [...prev, { msg: chatInput, id: Date.now() }]);
+		setChatInput("");
+		const result = sendMessage(chatInput);
+		if (result.variant === "error") {
+			setError(result.error);
+		}
+	};
 
 	return (
 		<>
 			<NavLink to="/">Home</NavLink>
 			<h1>Sender</h1>
-			<p>Scanner state: {scannerState.variant}</p>
 			<p>Connection state: {connectionState}</p>
-			QR Code reader
-			<div style={{ width: 300 }}>
-				<div id="reader"></div>
-			</div>
+			<p style={{ color: "red" }}>{error}</p>
+
+			<h2>Submit Remote Offer</h2>
+			<textarea
+				value={offerSDP}
+				onChange={(e) => setOfferSDP(e.target.value)}
+				rows={10}
+				cols={50}
+			></textarea>
+			<br />
+			<button onClick={submitOffer}>Submit</button>
+
+			<h2>Answer</h2>
+			<textarea value={answer?.sdp} rows={10} cols={50}></textarea>
+
+			<h2>Chat</h2>
+			{chat.map((msg) => (
+				<p key={msg.id}>{msg.msg}</p>
+			))}
+			<input
+				type="text"
+				value={chatInput}
+				onChange={(e) => setChatInput(e.target.value)}
+			/>
+			<button onClick={sendChat}>Send</button>
 		</>
 	);
 };
