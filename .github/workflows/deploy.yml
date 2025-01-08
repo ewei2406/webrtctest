@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR Number (for manual deploys)'
+        description: "PR Number (for manual deploys)"
         required: false
-        default: '0'
+        default: "0"
 
 jobs:
   deploy:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: "20.x"
 
       - name: Install dependencies
         run: npm i
@@ -38,11 +38,31 @@ jobs:
           else
             echo "::set-output name=pr_number::${{ github.event.inputs.pr_number }}"
           fi
+          echo "BUCKET_NAME=webrtc-pr-${{ steps.pr_number.outputs.pr_number }}" >> $GITHUB_ENV
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          target_branch: pr-${{ steps.pr_number.outputs.pr_number }}
-          cname: "webrtc-dev-${{ steps.pr_number.outputs.pr_number }}.edwardwei.com"
+      - name: Create S3 bucket policy
+        run: |
+          echo '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "PublicReadGetObject",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+              }
+            ]
+          }' > bucket-policy.json
+
+      - name: Deploy to S3
+        run: |
+          aws s3 mb s3://$BUCKET_NAME
+          aws s3 sync ./dist s3://$BUCKET_NAME
+          aws s3 website s3://$BUCKET_NAME --index-document index.html --error-document index.html
+          aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy file://bucket-policy.json
+          aws s3api delete-public-access-block --bucket $BUCKET_NAME
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
