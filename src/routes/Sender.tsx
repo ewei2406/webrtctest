@@ -10,6 +10,7 @@ const Sender = () => {
 
 	const { connectionState, setRemoteDescription, answer, sendMessage } = useRTC(
 		{
+			localOnly: false,
 			onMessage: (msg) => {
 				setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
 			},

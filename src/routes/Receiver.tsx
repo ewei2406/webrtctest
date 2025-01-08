@@ -15,6 +15,7 @@ const Receiver = () => {
 		setRemoteDescription,
 		sendMessage,
 	} = useRTC({
+		localOnly: true,
 		onMessage: (msg) => {
 			setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
 		},
