@@ -34,11 +34,12 @@ jobs:
         id: pr_number
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "::set-output name=pr_number::${{ github.event.pull_request.number }}"
+            echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           else
-            echo "::set-output name=pr_number::${{ github.event.inputs.pr_number }}"
+            echo "PR_NUMBER=${{ github.event.inputs.pr_number }}" >> $GITHUB_ENV
           fi
           echo "BUCKET_NAME=webrtc-pr-${{ steps.pr_number.outputs.pr_number }}" >> $GITHUB_ENV
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Create S3 bucket policy
         run: |
