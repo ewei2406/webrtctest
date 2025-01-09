@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR Number (for manual deploys)"
+        description: "PR Number (for manual cleanup)"
         required: false
         default: "0"
 
@@ -42,16 +42,17 @@ jobs:
           echo "BUCKET_NAME=webrtc-pr-$PR_NUMBER.edwardwei.com" >> $GITHUB_OUTPUT
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
 
-      - name: Deploy to S3
+      - name: Create bucket
+        if: github.event.action == 'opened'
         run: |
           aws s3 mb s3://$BUCKET_NAME
-          aws s3 sync ./dist s3://$BUCKET_NAME
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
       - name: Create S3 bucket policy
+        if: github.event.action == 'opened'
         run: |
           echo "{
             \"Version\": \"2012-10-17\",
@@ -67,10 +68,19 @@ jobs:
           }" > bucket-policy.json
 
       - name: Configure S3 access
+        if: github.event.action == 'opened'
         run: |
           aws s3 website s3://$BUCKET_NAME --index-document index.html --error-document index.html
           aws s3api delete-public-access-block --bucket $BUCKET_NAME
           aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy file://bucket-policy.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Upload to bucket
+        run: |
+          aws s3 sync ./dist s3://$BUCKET_NAME
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -80,8 +90,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # use the cloudflare cli to update the DNS records
       - name: Update DNS records
+        if: github.event.action == 'opened'
         run: |
           curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/dns_records" \
           -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY }}" \
@@ -95,7 +105,7 @@ jobs:
             \"type\": \"CNAME\"
           }\"
       - name: Comment on PR
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
