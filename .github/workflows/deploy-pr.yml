@@ -44,7 +44,7 @@ jobs:
           echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_OUTPUT
 
       - name: Create bucket
-        if: github.event.action == 'opened'
+        continue-on-error: true
         run: |
           aws s3 mb s3://$BUCKET_NAME
         env:
@@ -53,7 +53,6 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
       - name: Create S3 bucket policy
-        if: github.event.action == 'opened'
         run: |
           echo "{
             \"Version\": \"2012-10-17\",
@@ -69,7 +68,7 @@ jobs:
           }" > bucket-policy.json
 
       - name: Configure S3 access
-        if: github.event.action == 'opened'
+        continue-on-error: true
         run: |
           aws s3 website s3://$BUCKET_NAME --index-document index.html --error-document index.html
           aws s3api delete-public-access-block --bucket $BUCKET_NAME
