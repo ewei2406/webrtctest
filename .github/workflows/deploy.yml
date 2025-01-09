@@ -43,6 +43,7 @@ jobs:
 
       - name: Create S3 bucket policy
         run: |
+          echo $BUCKET_NAME
           echo '{
             "Version": "2012-10-17",
             "Statement": [
@@ -51,7 +52,7 @@ jobs:
                 "Effect": "Allow",
                 "Principal": "*",
                 "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+                "Resource": ["arn:aws:s3:::$BUCKET_NAME/*"]
               }
             ]
           }' > bucket-policy.json
