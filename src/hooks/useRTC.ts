@@ -171,18 +171,6 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		return { variant: "ok" };
 	}, []);
 
-	const submit = async (
-		type: "answer" | "offer",
-		sdp: string
-	): Promise<Result> => {
-		const result = await setRemoteDescription({
-			type: type,
-			sdp,
-		});
-		if (result.variant === "error") return result;
-		return { variant: "ok" };
-	};
-
 	const sendMessage = useCallback(
 		(data: T): Result => {
 			if (!dataChannelRef.current) {
@@ -221,9 +209,9 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		connectionState,
 		offer,
 		answer,
-		submitOffer: (sdp: string) => submit("offer", sdp),
-		submitAnswer: (sdp: string) => submit("answer", sdp),
+		setRemoteDescription,
 		sendMessage,
+		closeConnection,
 	};
 };
 
