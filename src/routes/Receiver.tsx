@@ -10,7 +10,7 @@ const Receiver = () => {
 	const [localOnly, setLocalOnly] = useState(true);
 
 	const { id, sendMessage, connectionState, status } = useCommunication({
-		localOnly: true,
+		localOnly,
 		onMessage: addMessage,
 		receptor: true,
 	});
