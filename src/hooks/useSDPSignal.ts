@@ -20,7 +20,8 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 
 	const sendSignal = (signalProps: {
 		targetId: string;
-		signal: RTCSessionDescriptionInit;
+		type: "offer" | "answer";
+		sdp?: string;
 		listen?: boolean;
 		merge?: boolean;
 	}): Result => {
@@ -29,8 +30,8 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 			setDoc(
 				signalRef,
 				{
-					[signalProps.signal.type + "Id"]: props.id,
-					[signalProps.signal.type]: signalProps.signal.sdp,
+					[signalProps.type + "Id"]: props.id,
+					[signalProps.type]: signalProps.sdp || "",
 				},
 				{ merge: signalProps.merge }
 			);
@@ -38,8 +39,8 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 				subToSignal(signalProps.targetId);
 			}
 			return { variant: "ok" };
-		} catch (err) {
-			return { variant: "error", error: err as string };
+		} catch (e) {
+			return { variant: "error", error: (e as Error).message };
 		}
 	};
 

@@ -50,10 +50,11 @@ const useCommunication = (props: UseCommunicationProps) => {
 	});
 
 	useEffect(() => {
-		if (props.receptor && offer && offer.sdp) {
+		if (props.receptor) {
 			const result = sendSignal({
 				targetId: props.id,
-				signal: offer,
+				type: "offer",
+				sdp: offer?.sdp,
 				listen: true,
 			});
 			setStatus(result);
@@ -66,10 +67,11 @@ const useCommunication = (props: UseCommunicationProps) => {
 	}, [offer, props.receptor]);
 
 	useEffect(() => {
-		if (callerId && !props.receptor && answer && answer.sdp) {
+		if (callerId && !props.receptor) {
 			const result = sendSignal({
 				targetId: callerId,
-				signal: answer,
+				type: "answer",
+				sdp: answer?.sdp,
 				merge: true,
 			});
 			setStatus(result);

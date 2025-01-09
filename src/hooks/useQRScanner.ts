@@ -1,4 +1,4 @@
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 import { useCallback, useState, useEffect, useRef } from "react";
 
 type ScannerState =
@@ -28,8 +28,14 @@ const useQRScanner = (props: UseQRScannerProps) => {
 		html5QrCodeRef.current = new Html5Qrcode(props.elementId);
 
 		return () => {
+			console.log("state", html5QrCodeRef.current?.getState());
 			// Stop the scanner if it has started
-			html5QrCodeRef.current?.stop();
+			if (
+				html5QrCodeRef.current?.getState() !==
+				Html5QrcodeScannerState.NOT_STARTED
+			) {
+				html5QrCodeRef.current?.stop();
+			}
 
 			// Cleanup the instance
 			html5QrCodeRef.current?.clear();
@@ -74,8 +80,8 @@ const useQRScanner = (props: UseQRScannerProps) => {
 				() => {}
 			);
 			setScannerState({ variant: "ready" });
-		} catch (err) {
-			setScannerState({ variant: "error", error: err as string });
+		} catch (e) {
+			setScannerState({ variant: "error", error: (e as Error).message });
 		}
 	}, [props.onScan, scannerState]);
 

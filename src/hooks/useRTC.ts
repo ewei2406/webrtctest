@@ -42,6 +42,8 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 	const [offer, setOffer] = useState<RTCSessionDescriptionInit | undefined>();
 	const [answer, setAnswer] = useState<RTCSessionDescriptionInit | undefined>();
 
+	console.log(offer);
+
 	const initializeConnection = useCallback((): Result => {
 		if (peerConnectionRef.current) {
 			peerConnectionRef.current.oniceconnectionstatechange = () => {};
