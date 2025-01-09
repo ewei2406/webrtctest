@@ -5,6 +5,7 @@ import ChatHistory from "../components/Chat/ChatHistory";
 import ChatInput from "../components/Chat/ChatInput";
 import useCommunication from "../hooks/useCommunication";
 import useId from "../hooks/useId";
+import QRCodeScanner from "../components/QRCode/QRCodeScanner";
 
 const Sender = () => {
 	const [callerId, setCallerId] = useState<string>("");
@@ -48,6 +49,7 @@ const Sender = () => {
 			<p style={{ color: "red" }}>
 				{status.variant === "error" && status.error}
 			</p>
+			<QRCodeScanner />
 			<h3>Chat</h3>
 			<ChatHistory messages={messages} />
 			<ChatInput onSubmit={sendMessage} />
