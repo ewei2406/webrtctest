@@ -1,37 +1,26 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
 import useRTC from "../hooks/useRTC";
+import useChat from "../hooks/useChat";
+import ChatHistory from "../components/Chat/ChatHistory";
+import ChatInput from "../components/Chat/ChatInput";
 
 const Sender = () => {
-	const [chat, setChat] = useState<{ msg: string; id: string | number }[]>([]);
 	const [offerSDP, setOfferSDP] = useState<string>("");
-	const [chatInput, setChatInput] = useState<string>("");
-	const [error, setError] = useState<string | null>(null);
 	const [localOnly, setLocalOnly] = useState<boolean>(true);
+	const [error, setError] = useState<string | null>(null);
 
-	const { connectionState, setRemoteDescription, answer, sendMessage } = useRTC(
-		{
-			localOnly,
-			onMessage: (msg) => {
-				setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
-			},
-		}
-	);
+	const { messages, addMessage } = useChat();
 
-	const submitOffer = async () => {
-		const result = await setRemoteDescription({
-			type: "offer",
-			sdp: offerSDP,
-		});
-		if (result.variant === "error") {
-			setError(result.error);
-		}
-	};
+	const { connectionState, submitOffer, answer, sendMessage } = useRTC({
+		localOnly,
+		isOfferCreator: true,
+		onRecieveMessage: addMessage,
+		onSendMessage: addMessage,
+	});
 
-	const sendChat = () => {
-		setChat((prev) => [...prev, { msg: chatInput, id: Date.now() }]);
-		setChatInput("");
-		const result = sendMessage(chatInput);
+	const handleSubmitOffer = async () => {
+		const result = await submitOffer(offerSDP);
 		if (result.variant === "error") {
 			setError(result.error);
 		}
@@ -61,7 +50,7 @@ const Sender = () => {
 				cols={50}
 			></textarea>
 			<br />
-			<button onClick={submitOffer}>Submit</button>
+			<button onClick={handleSubmitOffer}>Submit</button>
 
 			<h2>Answer</h2>
 			<textarea
@@ -72,15 +61,8 @@ const Sender = () => {
 			></textarea>
 
 			<h2>Chat</h2>
-			{chat.map((msg) => (
-				<p key={msg.id}>{msg.msg}</p>
-			))}
-			<input
-				type="text"
-				value={chatInput}
-				onChange={(e) => setChatInput(e.target.value)}
-			/>
-			<button onClick={sendChat}>Send</button>
+			<ChatHistory messages={messages} />
+			<ChatInput onSubmit={sendMessage} />
 		</>
 	);
 };
