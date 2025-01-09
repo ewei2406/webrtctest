@@ -3,6 +3,9 @@ import { useCallback, useState, useEffect, useRef } from "react";
 
 type ScannerState =
 	| {
+			variant: "stopped";
+	  }
+	| {
 			variant: "loading";
 	  }
 	| {
@@ -34,7 +37,7 @@ const useQRScanner = (props: UseQRScannerProps) => {
 	}, [props.elementId]);
 
 	const [scannerState, setScannerState] = useState<ScannerState>({
-		variant: "loading",
+		variant: "stopped",
 	});
 
 	const startScanner = useCallback(async () => {
@@ -45,6 +48,9 @@ const useQRScanner = (props: UseQRScannerProps) => {
 			});
 			return;
 		}
+		setScannerState({
+			variant: "loading",
+		});
 
 		try {
 			const devices = await Html5Qrcode.getCameras();
@@ -55,7 +61,6 @@ const useQRScanner = (props: UseQRScannerProps) => {
 				});
 				return;
 			}
-			const cameraId = devices[0].id;
 
 			// Restart the scanner if it has started
 			if (scannerState.variant === "ready") {
@@ -63,7 +68,7 @@ const useQRScanner = (props: UseQRScannerProps) => {
 			}
 
 			await html5QrCodeRef.current.start(
-				cameraId,
+				{ facingMode: "environment" },
 				{ fps: 10 },
 				props.onScan,
 				() => {}
@@ -74,7 +79,13 @@ const useQRScanner = (props: UseQRScannerProps) => {
 		}
 	}, [props.onScan, scannerState]);
 
-	return { scannerState, startScanner };
+	const stopScanner = useCallback(async () => {
+		if (!html5QrCodeRef.current) return;
+		await html5QrCodeRef.current.stop();
+		setScannerState({ variant: "stopped" });
+	}, []);
+
+	return { scannerState, startScanner, stopScanner };
 };
 
 export default useQRScanner;
