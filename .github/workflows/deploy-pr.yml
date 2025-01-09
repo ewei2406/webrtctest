@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR Number (for manual cleanup)"
+        description: "PR Number (for manual deploys)"
         required: false
         default: "0"
 
