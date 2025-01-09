@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { getUUID } from "../util/uuid";
 import useSDPSignal, { SDPSignal } from "./useSDPSignal";
 import useRTC from "./useRTC";
 import { Result } from "../util/result";
 
 type UseCommunicationProps = {
+	id: string;
 	receptor: boolean;
 	localOnly: boolean;
 	onMessage: (message: string) => void;
 };
 
 const useCommunication = (props: UseCommunicationProps) => {
-	const [id] = useState(getUUID());
 	const [status, setStatus] = useState<Result>({ variant: "ok" });
 	const [callerId, setCallerId] = useState<string>();
 
@@ -52,18 +51,22 @@ const useCommunication = (props: UseCommunicationProps) => {
 	);
 
 	const { sendSignal, subToSignal, unsubToSignal } = useSDPSignal({
-		id,
+		id: props.id,
 		onSignal,
 	});
 
 	useEffect(() => {
 		if (props.receptor && offer && offer.sdp) {
-			const result = sendSignal({ targetId: id, signal: offer, listen: true });
+			const result = sendSignal({
+				targetId: props.id,
+				signal: offer,
+				listen: true,
+			});
 			setStatus(result);
 		}
 
 		return () => {
-			unsubToSignal(id);
+			unsubToSignal(props.id);
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [offer, props.receptor]);
@@ -87,7 +90,7 @@ const useCommunication = (props: UseCommunicationProps) => {
 			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [callerId]);
+	}, [props.id, callerId]);
 
 	const call = (targetId: string) => {
 		setCallerId(targetId);
@@ -97,7 +100,7 @@ const useCommunication = (props: UseCommunicationProps) => {
 		setCallerId(undefined);
 	};
 
-	return { id, connectionState, call, endCall, sendMessage, status };
+	return { connectionState, call, endCall, sendMessage, status };
 };
 
 export default useCommunication;

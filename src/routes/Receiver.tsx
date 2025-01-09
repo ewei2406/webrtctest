@@ -4,12 +4,16 @@ import ChatHistory from "../components/Chat/ChatHistory";
 import ChatInput from "../components/Chat/ChatInput";
 import useCommunication from "../hooks/useCommunication";
 import { useState } from "react";
+import QRCode from "../components/QRCode";
+import useId from "../hooks/useId";
 
 const Receiver = () => {
 	const { messages, addMessage } = useChat();
 	const [localOnly, setLocalOnly] = useState(true);
+	const { id } = useId();
 
-	const { id, sendMessage, connectionState, status } = useCommunication({
+	const { sendMessage, connectionState, status } = useCommunication({
+		id,
 		localOnly,
 		onMessage: addMessage,
 		receptor: true,
@@ -29,6 +33,7 @@ const Receiver = () => {
 			<label htmlFor="localOnly">Use Local Network Only</label> <br />
 			<p>
 				My id: <input type="text" readOnly value={id} />
+				<QRCode data={id} />
 			</p>
 			<p style={{ color: "red" }}>
 				{status.variant === "error" && status.error}

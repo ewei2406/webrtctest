@@ -4,6 +4,7 @@ import useChat from "../hooks/useChat";
 import ChatHistory from "../components/Chat/ChatHistory";
 import ChatInput from "../components/Chat/ChatInput";
 import useCommunication from "../hooks/useCommunication";
+import useId from "../hooks/useId";
 
 const Sender = () => {
 	const [callerId, setCallerId] = useState<string>("");
@@ -11,7 +12,9 @@ const Sender = () => {
 
 	const { messages, addMessage } = useChat();
 
-	const { id, sendMessage, connectionState, call, status } = useCommunication({
+	const { id } = useId();
+	const { sendMessage, connectionState, call, status } = useCommunication({
+		id,
 		localOnly,
 		onMessage: addMessage,
 		receptor: false,
