@@ -112,7 +112,7 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const bucketName = ${{ needs.deploy.outputs.BUCKET_NAME }};
+            const bucketName = process.env.BUCKET_NAME;
             const url = `https://${bucketName}`;
             github.rest.issues.createComment({
               owner: context.repo.owner,
@@ -120,3 +120,5 @@ jobs:
               issue_number: prNumber,
               body: `The deployment is complete. You can access it at ${url}`
             });
+        env:
+          BUCKET_NAME: ${{ needs.deploy.outputs.BUCKET_NAME }}
