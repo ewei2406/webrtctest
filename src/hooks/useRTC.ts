@@ -76,7 +76,6 @@ const useRTC = (props: UseRTCProps) => {
 			DEFAULT_DATACHANNEL_LABEL
 		);
 		initializeDataChannel(newDataChannel);
-
 		return { variant: "ok" };
 	}, [props]);
 
@@ -84,6 +83,10 @@ const useRTC = (props: UseRTCProps) => {
 		if (peerConnectionRef.current) {
 			peerConnectionRef.current.close();
 		}
+		peerConnectionRef.current = undefined;
+		dataChannelRef.current = undefined;
+		setOffer(undefined);
+		setAnswer(undefined);
 		setConnectionState("disconnected");
 		return { variant: "ok" };
 	}, []);

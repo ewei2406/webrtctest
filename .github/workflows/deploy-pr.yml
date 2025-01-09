@@ -120,3 +120,5 @@ jobs:
               issue_number: prNumber,
               body: `The deployment is complete. You can access it at ${url}`
             });
+        env:
+          BUCKET_NAME: ${{ needs.deploy.outputs.BUCKET_NAME }}

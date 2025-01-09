@@ -7,6 +7,7 @@ const Receiver = () => {
 	const [answerSDP, setAnswerSDP] = useState<string>("");
 	const [chatInput, setChatInput] = useState<string>("");
 	const [error, setError] = useState<string | null>(null);
+	const [localOnly, setLocalOnly] = useState<boolean>(true);
 
 	const {
 		connectionState,
@@ -15,7 +16,7 @@ const Receiver = () => {
 		setRemoteDescription,
 		sendMessage,
 	} = useRTC({
-		localOnly: true,
+		localOnly,
 		onMessage: (msg) => {
 			setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
 		},
@@ -46,17 +47,31 @@ const Receiver = () => {
 				setError(result.error);
 			}
 		});
-	}, [createOffer]);
+	}, [createOffer, localOnly]);
 
 	return (
 		<>
 			<NavLink to="/">Home</NavLink>
 			<h1>Receiver</h1>
+
+			<input
+				name="localOnly"
+				type="checkbox"
+				checked={localOnly}
+				onChange={(e) => setLocalOnly(e.target.checked)}
+			/>
+			<label htmlFor="localOnly">Use Local Network Only</label>
+
 			<p>Connection state: {connectionState}</p>
 			<p style={{ color: "red" }}>{error}</p>
 
 			<h2>Offer</h2>
-			<textarea value={offer?.sdp} rows={10} cols={50}></textarea>
+			<textarea
+				value={offer ? offer.sdp : ""}
+				rows={10}
+				cols={50}
+				readOnly
+			></textarea>
 
 			<h2>Submit Answer</h2>
 			<textarea
