@@ -10,7 +10,6 @@
 		"preview": "vite preview"
 	},
 	"dependencies": {
-		"@yudiel/react-qr-scanner": "^2.1.0",
 		"firebase": "^11.1.0",
 		"html5-qrcode": "^2.3.8",
 		"qrcode.react": "^4.2.0",
