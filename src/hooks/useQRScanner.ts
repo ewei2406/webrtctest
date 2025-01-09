@@ -1,7 +1,10 @@
-import { Html5Qrcode } from "html5-qrcode";
+import { Html5Qrcode, Html5QrcodeScannerState } from "html5-qrcode";
 import { useCallback, useState, useEffect, useRef } from "react";
 
 type ScannerState =
+	| {
+			variant: "stopped";
+	  }
 	| {
 			variant: "loading";
 	  }
@@ -25,8 +28,14 @@ const useQRScanner = (props: UseQRScannerProps) => {
 		html5QrCodeRef.current = new Html5Qrcode(props.elementId);
 
 		return () => {
+			console.log("state", html5QrCodeRef.current?.getState());
 			// Stop the scanner if it has started
-			html5QrCodeRef.current?.stop();
+			if (
+				html5QrCodeRef.current?.getState() !==
+				Html5QrcodeScannerState.NOT_STARTED
+			) {
+				html5QrCodeRef.current?.stop();
+			}
 
 			// Cleanup the instance
 			html5QrCodeRef.current?.clear();
@@ -34,7 +43,7 @@ const useQRScanner = (props: UseQRScannerProps) => {
 	}, [props.elementId]);
 
 	const [scannerState, setScannerState] = useState<ScannerState>({
-		variant: "loading",
+		variant: "stopped",
 	});
 
 	const startScanner = useCallback(async () => {
@@ -45,6 +54,9 @@ const useQRScanner = (props: UseQRScannerProps) => {
 			});
 			return;
 		}
+		setScannerState({
+			variant: "loading",
+		});
 
 		try {
 			const devices = await Html5Qrcode.getCameras();
@@ -55,7 +67,6 @@ const useQRScanner = (props: UseQRScannerProps) => {
 				});
 				return;
 			}
-			const cameraId = devices[0].id;
 
 			// Restart the scanner if it has started
 			if (scannerState.variant === "ready") {
@@ -63,18 +74,24 @@ const useQRScanner = (props: UseQRScannerProps) => {
 			}
 
 			await html5QrCodeRef.current.start(
-				cameraId,
+				{ facingMode: "environment" },
 				{ fps: 10 },
 				props.onScan,
 				() => {}
 			);
 			setScannerState({ variant: "ready" });
-		} catch (err) {
-			setScannerState({ variant: "error", error: err as string });
+		} catch (e) {
+			setScannerState({ variant: "error", error: (e as Error).message });
 		}
 	}, [props.onScan, scannerState]);
 
-	return { scannerState, startScanner };
+	const stopScanner = useCallback(async () => {
+		if (!html5QrCodeRef.current) return;
+		await html5QrCodeRef.current.stop();
+		setScannerState({ variant: "stopped" });
+	}, []);
+
+	return { scannerState, startScanner, stopScanner };
 };
 
 export default useQRScanner;

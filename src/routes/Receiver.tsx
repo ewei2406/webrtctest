@@ -4,12 +4,16 @@ import ChatHistory from "../components/Chat/ChatHistory";
 import ChatInput from "../components/Chat/ChatInput";
 import useCommunication from "../hooks/useCommunication";
 import { useState } from "react";
+import QRCode from "../components/QRCode";
+import useId from "../hooks/useId";
 
 const Receiver = () => {
 	const { messages, addMessage } = useChat();
 	const [localOnly, setLocalOnly] = useState(true);
+	const { id } = useId();
 
-	const { id, sendMessage, connectionState, status } = useCommunication({
+	const { sendMessage, connectionState, status } = useCommunication({
+		id,
 		localOnly,
 		onMessage: addMessage,
 		receptor: true,
@@ -30,6 +34,7 @@ const Receiver = () => {
 			<p>
 				My id: <input type="text" readOnly value={id} />
 			</p>
+			<QRCode data={id} />
 			<p style={{ color: "red" }}>
 				{status.variant === "error" && status.error}
 			</p>
