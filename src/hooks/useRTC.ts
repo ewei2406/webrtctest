@@ -13,12 +13,12 @@ const DEFAULT_RTC_CONFIG: RTCConfiguration = {
 const DEFAULT_DATACHANNEL_LABEL = "chat";
 
 type ConnectionState =
-	| "error"
-	| "disconnected"
-	| "readying"
-	| "ready"
-	| "connecting"
-	| "connected";
+	| { variant: "error"; error: string }
+	| { variant: "disconnected" }
+	| { variant: "readying" }
+	| { variant: "ready" }
+	| { variant: "connecting" }
+	| { variant: "connected" };
 
 type DataChannelData = string | Blob | ArrayBuffer | ArrayBufferView;
 
@@ -35,11 +35,13 @@ type UseRTCProps<T extends DataChannelData> = {
 const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 	const dataChannelRef = useRef<RTCDataChannel>();
 	const peerConnectionRef = useRef<RTCPeerConnection>();
-	const [connectionState, setConnectionState] =
-		useState<ConnectionState>("disconnected");
+	const [connectionState, setConnectionState] = useState<ConnectionState>({
+		variant: "disconnected",
+	});
 
 	const [offer, setOffer] = useState<RTCSessionDescriptionInit | undefined>();
 	const [answer, setAnswer] = useState<RTCSessionDescriptionInit | undefined>();
+	const [resetCount, setResetCount] = useState(0);
 
 	const initializeConnection = useCallback((): Result => {
 		// Connection already exists.
@@ -54,14 +56,14 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		const initializeDataChannel = (channel: RTCDataChannel) => {
 			dataChannelRef.current = channel;
 			dataChannelRef.current.onopen = () => {
-				setConnectionState("connected");
+				setConnectionState({ variant: "connected" });
 			};
 			dataChannelRef.current.onmessage = (event) => {
 				props.onRecieveMessage(event.data);
 			};
 		};
 
-		setConnectionState("ready");
+		setConnectionState({ variant: "ready" });
 		const config = props.localOnly ? {} : DEFAULT_RTC_CONFIG;
 		peerConnectionRef.current = new RTCPeerConnection(config);
 		peerConnectionRef.current.ondatachannel = (event) => {
@@ -70,10 +72,10 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		peerConnectionRef.current.oniceconnectionstatechange = () => {
 			switch (peerConnectionRef.current?.iceConnectionState) {
 				case "disconnected":
-					setConnectionState("disconnected");
+					setConnectionState({ variant: "disconnected" });
 					break;
 				default:
-					setConnectionState("connecting");
+					setConnectionState({ variant: "connecting" });
 			}
 		};
 
@@ -92,7 +94,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		dataChannelRef.current = undefined;
 		setOffer(undefined);
 		setAnswer(undefined);
-		setConnectionState("disconnected");
+		setConnectionState({ variant: "disconnected" });
 		return { variant: "ok" };
 	}, []);
 
@@ -104,7 +106,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 
 			try {
 				await peerConnectionRef.current.setRemoteDescription(description);
-				setConnectionState("connecting");
+				setConnectionState({ variant: "disconnected" });
 				// catch the operationError
 			} catch (e) {
 				return { variant: "error", error: (e as Error).message };
@@ -160,13 +162,13 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 			) {
 				return;
 			}
-			setConnectionState("ready");
+			setConnectionState({ variant: "ready" });
 			setOffer(peerConnectionRef.current.localDescription);
 		};
 
 		const offer = await peerConnectionRef.current.createOffer();
 		await peerConnectionRef.current.setLocalDescription(offer);
-		setConnectionState("readying");
+		setConnectionState({ variant: "readying" });
 
 		return { variant: "ok" };
 	}, []);
@@ -193,8 +195,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		if (props.isOfferCreator) {
 			createOffer().then((result) => {
 				if (result.variant === "error") {
-					console.error(result.error);
-					setConnectionState("error");
+					setConnectionState(result);
 				}
 			});
 		}
@@ -203,7 +204,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 			closeConnection();
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [props.localOnly, props.isOfferCreator, props.localOnly]);
+	}, [props.localOnly, props.isOfferCreator, resetCount]);
 
 	return {
 		connectionState,
@@ -211,7 +212,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		answer,
 		setRemoteDescription,
 		sendMessage,
-		closeConnection,
+		resetConnection: () => setResetCount((x) => x + 1),
 	};
 };
 

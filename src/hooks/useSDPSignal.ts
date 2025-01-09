@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "../util/firebase";
+import { Result } from "../util/result";
 
 type UseSDPSignalProps<T> = {
 	id: string;
@@ -21,18 +22,23 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 		targetId: string;
 		signal: RTCSessionDescriptionInit;
 		listen?: boolean;
-	}) => {
-		const signalRef = doc(db, "sdp", signalProps.targetId);
-		setDoc(
-			signalRef,
-			{
-				[signalProps.signal.type + "Id"]: props.id,
-				[signalProps.signal.type]: signalProps.signal.sdp,
-			},
-			{ merge: true }
-		);
-		if (signalProps.listen) {
-			subToSignal(signalProps.targetId);
+	}): Result => {
+		try {
+			const signalRef = doc(db, "sdp", signalProps.targetId);
+			setDoc(
+				signalRef,
+				{
+					[signalProps.signal.type + "Id"]: props.id,
+					[signalProps.signal.type]: signalProps.signal.sdp,
+				},
+				{ merge: true }
+			);
+			if (signalProps.listen) {
+				subToSignal(signalProps.targetId);
+			}
+			return { variant: "ok" };
+		} catch (err) {
+			return { variant: "error", error: err as string };
 		}
 	};
 

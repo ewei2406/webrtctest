@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getUUID } from "../util/uuid";
 import useSDPSignal, { SDPSignal } from "./useSDPSignal";
 import useRTC from "./useRTC";
+import { Result } from "../util/result";
 
 type UseCommunicationProps = {
 	receptor: boolean;
@@ -11,7 +12,8 @@ type UseCommunicationProps = {
 
 const useCommunication = (props: UseCommunicationProps) => {
 	const [id] = useState(getUUID());
-	const [callerId, setCallerId] = useState<string | null>(null);
+	const [status, setStatus] = useState<Result>({ variant: "ok" });
+	const [callerId, setCallerId] = useState<string>();
 
 	const {
 		connectionState,
@@ -19,10 +21,10 @@ const useCommunication = (props: UseCommunicationProps) => {
 		answer,
 		setRemoteDescription,
 		sendMessage,
-		closeConnection,
+		resetConnection,
 	} = useRTC({
 		localOnly: props.localOnly,
-		isOfferCreator: true,
+		isOfferCreator: props.receptor,
 		onRecieveMessage: props.onMessage,
 		onSendMessage: props.onMessage,
 	});
@@ -30,17 +32,19 @@ const useCommunication = (props: UseCommunicationProps) => {
 	const onSignal = useCallback(
 		async (signal: SDPSignal) => {
 			if (props.receptor && signal.answer) {
-				setRemoteDescription({
+				const result = await setRemoteDescription({
 					sdp: signal.answer,
 					type: "answer",
 				});
+				setStatus(result);
 				return;
 			}
 			if (!props.receptor && signal.offer) {
-				await setRemoteDescription({
+				const result = await setRemoteDescription({
 					sdp: signal.offer,
 					type: "offer",
 				});
+				setStatus(result);
 				return;
 			}
 		},
@@ -54,41 +58,46 @@ const useCommunication = (props: UseCommunicationProps) => {
 
 	useEffect(() => {
 		if (props.receptor && offer && offer.sdp) {
-			sendSignal({ targetId: id, signal: offer, listen: true });
+			const result = sendSignal({ targetId: id, signal: offer, listen: true });
+			setStatus(result);
 		}
 
 		return () => {
 			unsubToSignal(id);
 		};
-	}, [offer, props.receptor, id, sendSignal, unsubToSignal]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [offer, props.receptor]);
 
 	useEffect(() => {
-		if (!props.receptor && answer && answer.sdp) {
-			sendSignal({ targetId: id, signal: answer });
+		if (callerId && !props.receptor && answer && answer.sdp) {
+			const result = sendSignal({ targetId: callerId, signal: answer });
+			setStatus(result);
 		}
-	}, [answer, props.receptor, id, sendSignal]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [answer, props.receptor]);
 
 	useEffect(() => {
 		if (callerId) {
 			subToSignal(callerId);
 		}
 		return () => {
-			closeConnection();
+			resetConnection();
 			if (callerId) {
 				unsubToSignal(callerId);
 			}
 		};
-	}, [callerId, subToSignal, unsubToSignal]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [callerId]);
 
 	const call = (targetId: string) => {
 		setCallerId(targetId);
 	};
 
 	const endCall = () => {
-		setCallerId(null);
+		setCallerId(undefined);
 	};
 
-	return { connectionState, call, endCall, sendMessage };
+	return { id, connectionState, call, endCall, sendMessage, status };
 };
 
 export default useCommunication;
