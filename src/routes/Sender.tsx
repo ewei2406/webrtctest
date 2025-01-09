@@ -49,7 +49,7 @@ const Sender = () => {
 			<p style={{ color: "red" }}>
 				{status.variant === "error" && status.error}
 			</p>
-			<QRCodeScanner />
+			<QRCodeScanner width={250} onScan={call} />
 			<h3>Chat</h3>
 			<ChatHistory messages={messages} />
 			<ChatInput onSubmit={sendMessage} />

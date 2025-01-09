@@ -33,8 +33,8 @@ const Receiver = () => {
 			<label htmlFor="localOnly">Use Local Network Only</label> <br />
 			<p>
 				My id: <input type="text" readOnly value={id} />
-				<QRCode data={id} />
 			</p>
+			<QRCode data={id} />
 			<p style={{ color: "red" }}>
 				{status.variant === "error" && status.error}
 			</p>

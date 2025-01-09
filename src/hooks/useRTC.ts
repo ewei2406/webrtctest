@@ -41,17 +41,25 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 
 	const [offer, setOffer] = useState<RTCSessionDescriptionInit | undefined>();
 	const [answer, setAnswer] = useState<RTCSessionDescriptionInit | undefined>();
-	const [resetCount, setResetCount] = useState(0);
 
 	const initializeConnection = useCallback((): Result => {
-		// Connection already exists.
-		// TODO: Reset the connection.
 		if (peerConnectionRef.current) {
-			return {
-				variant: "error",
-				error: "Connection already exists.",
-			};
+			peerConnectionRef.current.oniceconnectionstatechange = () => {};
+			peerConnectionRef.current.onicecandidate = () => {};
+			peerConnectionRef.current.ondatachannel = () => {};
+			peerConnectionRef.current.close();
 		}
+		if (dataChannelRef.current) {
+			dataChannelRef.current.onopen = () => {};
+			dataChannelRef.current.onmessage = () => {};
+			dataChannelRef.current.close();
+		}
+
+		peerConnectionRef.current = undefined;
+		dataChannelRef.current = undefined;
+		setOffer(undefined);
+		setAnswer(undefined);
+		setConnectionState({ variant: "disconnected" });
 
 		const initializeDataChannel = (channel: RTCDataChannel) => {
 			dataChannelRef.current = channel;
@@ -72,6 +80,7 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		peerConnectionRef.current.oniceconnectionstatechange = () => {
 			switch (peerConnectionRef.current?.iceConnectionState) {
 				case "disconnected":
+					console.log("pc disconnected");
 					setConnectionState({ variant: "disconnected" });
 					break;
 				default:
@@ -83,20 +92,16 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 			DEFAULT_DATACHANNEL_LABEL
 		);
 		initializeDataChannel(newDataChannel);
+
+		if (props.isOfferCreator) {
+			createOffer().then((result) => {
+				if (result.variant === "error") {
+					setConnectionState(result);
+				}
+			});
+		}
 		return { variant: "ok" };
 	}, [props]);
-
-	const closeConnection = useCallback((): Result => {
-		if (peerConnectionRef.current) {
-			peerConnectionRef.current.close();
-		}
-		peerConnectionRef.current = undefined;
-		dataChannelRef.current = undefined;
-		setOffer(undefined);
-		setAnswer(undefined);
-		setConnectionState({ variant: "disconnected" });
-		return { variant: "ok" };
-	}, []);
 
 	const setRemoteDescription = useCallback(
 		async (description: RTCSessionDescriptionInit): Promise<Result> => {
@@ -192,19 +197,8 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 
 	useEffect(() => {
 		initializeConnection();
-		if (props.isOfferCreator) {
-			createOffer().then((result) => {
-				if (result.variant === "error") {
-					setConnectionState(result);
-				}
-			});
-		}
-
-		return () => {
-			closeConnection();
-		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [props.localOnly, props.isOfferCreator, resetCount]);
+	}, [props.localOnly, props.isOfferCreator]);
 
 	return {
 		connectionState,
@@ -212,7 +206,6 @@ const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 		answer,
 		setRemoteDescription,
 		sendMessage,
-		resetConnection: () => setResetCount((x) => x + 1),
 	};
 };
 

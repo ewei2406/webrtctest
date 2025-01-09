@@ -22,6 +22,7 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 		targetId: string;
 		signal: RTCSessionDescriptionInit;
 		listen?: boolean;
+		merge?: boolean;
 	}): Result => {
 		try {
 			const signalRef = doc(db, "sdp", signalProps.targetId);
@@ -31,7 +32,7 @@ const useSDPSignal = <T = SDPSignal>(props: UseSDPSignalProps<T>) => {
 					[signalProps.signal.type + "Id"]: props.id,
 					[signalProps.signal.type]: signalProps.signal.sdp,
 				},
-				{ merge: true }
+				{ merge: signalProps.merge }
 			);
 			if (signalProps.listen) {
 				subToSignal(signalProps.targetId);

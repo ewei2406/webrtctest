@@ -1,12 +1,25 @@
+import { useEffect } from "react";
 import useQRScanner from "../../hooks/useQRScanner";
 
-const QRCodeScanner = () => {
+type QRCodeScannerProps = {
+	width: number | string;
+	onScan: (decodedText: string) => void;
+	disabled?: boolean;
+};
+
+const QRCodeScanner = (props: QRCodeScannerProps) => {
 	const { scannerState, startScanner, stopScanner } = useQRScanner({
 		elementId: "reader",
 		onScan: (decodedText) => {
-			console.log(decodedText);
+			props.onScan(decodedText);
+			stopScanner();
 		},
 	});
+
+	useEffect(() => {
+		if (props.disabled) stopScanner();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [props.disabled]);
 
 	return (
 		<div>
@@ -20,8 +33,8 @@ const QRCodeScanner = () => {
 			{scannerState.variant === "ready" && (
 				<button onClick={stopScanner}>Stop Scanner</button>
 			)}
-			<div style={{ width: "50%" }}>
-				<div id="reader" style={{ width: 600 }}></div>
+			<div style={{ width: props.width }}>
+				<div id="reader" style={{ position: "relative" }}></div>
 			</div>
 		</div>
 	);

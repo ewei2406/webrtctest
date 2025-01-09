@@ -14,19 +14,13 @@ const useCommunication = (props: UseCommunicationProps) => {
 	const [status, setStatus] = useState<Result>({ variant: "ok" });
 	const [callerId, setCallerId] = useState<string>();
 
-	const {
-		connectionState,
-		offer,
-		answer,
-		setRemoteDescription,
-		sendMessage,
-		resetConnection,
-	} = useRTC({
-		localOnly: props.localOnly,
-		isOfferCreator: props.receptor,
-		onRecieveMessage: props.onMessage,
-		onSendMessage: props.onMessage,
-	});
+	const { connectionState, offer, answer, setRemoteDescription, sendMessage } =
+		useRTC({
+			localOnly: props.localOnly,
+			isOfferCreator: props.receptor,
+			onRecieveMessage: props.onMessage,
+			onSendMessage: props.onMessage,
+		});
 
 	const onSignal = useCallback(
 		async (signal: SDPSignal) => {
@@ -73,7 +67,11 @@ const useCommunication = (props: UseCommunicationProps) => {
 
 	useEffect(() => {
 		if (callerId && !props.receptor && answer && answer.sdp) {
-			const result = sendSignal({ targetId: callerId, signal: answer });
+			const result = sendSignal({
+				targetId: callerId,
+				signal: answer,
+				merge: true,
+			});
 			setStatus(result);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -84,13 +82,12 @@ const useCommunication = (props: UseCommunicationProps) => {
 			subToSignal(callerId);
 		}
 		return () => {
-			resetConnection();
 			if (callerId) {
 				unsubToSignal(callerId);
 			}
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [props.id, callerId]);
+	}, [callerId]);
 
 	const call = (targetId: string) => {
 		setCallerId(targetId);
