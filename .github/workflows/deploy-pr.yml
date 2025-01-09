@@ -7,14 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR Number (for manual cleanup)"
+        description: "PR Number (for manual deploys)"
         required: false
         default: "0"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    outputs:
+      BUCKET_NAME: ${{ steps.pr_number.outputs.BUCKET_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -91,21 +92,23 @@ jobs:
 
     steps:
       - name: Update DNS records
-        if: github.event.action == 'opened'
+        # if: github.event.action == 'opened'
         run: |
           curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CLOUDFLARE_ZONE_ID }}/dns_records" \
           -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_KEY }}" \
           -H "Content-Type: application/json" \
-          -d \"{
-            \"comment\": \"autocreated\",
-            \"content\": \"$BUCKET_NAME.s3-website-${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com\",
-            \"name\": \"$BUCKET_NAME\",
-            \"proxied\": true,
-            \"ttl\": 1,
-            \"type\": \"CNAME\"
-          }\"
+          -d '{
+            "comment": "autocreated",
+            "content": "${{ needs.deploy.outputs.BUCKET_NAME }}.s3-website-${{ secrets.AWS_DEFAULT_REGION }}.amazonaws.com",
+            "name": "${{ needs.deploy.outputs.BUCKET_NAME }}",
+            "proxied": true,
+            "ttl": 1,
+            "type": "CNAME"
+          }'
+
       - name: Comment on PR
-        if: github.event_name == 'pull_request'
+        permissions: write-all
+        # if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
