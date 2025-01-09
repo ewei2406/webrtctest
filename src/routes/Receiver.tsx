@@ -1,98 +1,41 @@
-import { useEffect, useState } from "react";
 import { NavLink } from "react-router";
-import useRTC from "../hooks/useRTC";
+import useChat from "../hooks/useChat";
+import ChatHistory from "../components/Chat/ChatHistory";
+import ChatInput from "../components/Chat/ChatInput";
+import useCommunication from "../hooks/useCommunication";
+import { useState } from "react";
 
 const Receiver = () => {
-	const [chat, setChat] = useState<{ msg: string; id: string | number }[]>([]);
-	const [answerSDP, setAnswerSDP] = useState<string>("");
-	const [chatInput, setChatInput] = useState<string>("");
-	const [error, setError] = useState<string | null>(null);
-	const [localOnly, setLocalOnly] = useState<boolean>(true);
+	const { messages, addMessage } = useChat();
+	const [localOnly, setLocalOnly] = useState(true);
 
-	const {
-		connectionState,
-		offer,
-		createOffer,
-		setRemoteDescription,
-		sendMessage,
-	} = useRTC({
+	const { id, sendMessage, connectionState, status } = useCommunication({
 		localOnly,
-		onMessage: (msg) => {
-			setChat((prev) => [...prev, { msg: msg.data, id: msg.timeStamp }]);
-		},
+		onMessage: addMessage,
+		receptor: true,
 	});
-
-	const submitAnswer = async () => {
-		const result = await setRemoteDescription({
-			type: "answer",
-			sdp: answerSDP,
-		});
-		if (result.variant === "error") {
-			setError(result.error);
-		}
-	};
-
-	const sendChat = () => {
-		setChat((prev) => [...prev, { msg: chatInput, id: Date.now() }]);
-		setChatInput("");
-		const result = sendMessage(chatInput);
-		if (result.variant === "error") {
-			setError(result.error);
-		}
-	};
-
-	useEffect(() => {
-		createOffer().then((result) => {
-			if (result.variant === "error") {
-				setError(result.error);
-			}
-		});
-	}, [createOffer, localOnly]);
 
 	return (
 		<>
 			<NavLink to="/">Home</NavLink>
 			<h1>Receiver</h1>
-
+			<p>Connection state: {connectionState.variant}</p>
 			<input
-				name="localOnly"
 				type="checkbox"
+				name="localOnly"
 				checked={localOnly}
-				onChange={(e) => setLocalOnly(e.target.checked)}
+				onChange={() => setLocalOnly(!localOnly)}
 			/>
-			<label htmlFor="localOnly">Use Local Network Only</label>
-
-			<p>Connection state: {connectionState}</p>
-			<p style={{ color: "red" }}>{error}</p>
-
-			<h2>Offer</h2>
-			<textarea
-				value={offer ? offer.sdp : ""}
-				rows={10}
-				cols={50}
-				readOnly
-			></textarea>
-
-			<h2>Submit Answer</h2>
-			<textarea
-				value={answerSDP}
-				onChange={(e) => setAnswerSDP(e.target.value)}
-				rows={10}
-				cols={50}
-			></textarea>
-			<br />
-			<button onClick={submitAnswer}>Submit</button>
-
-			<h2>Chat</h2>
-			{chat.map((msg) => (
-				<p key={msg.id}>{msg.msg}</p>
-			))}
-			<input
-				type="text"
-				value={chatInput}
-				onChange={(e) => setChatInput(e.target.value)}
-			/>
-			<button onClick={sendChat}>Send</button>
+			<label htmlFor="localOnly">Use Local Network Only</label> <br />
+			<p>
+				My id: <input type="text" readOnly value={id} />
+			</p>
+			<p style={{ color: "red" }}>
+				{status.variant === "error" && status.error}
+			</p>
+			<h3>Chat</h3>
+			<ChatHistory messages={messages} />
+			<ChatInput onSubmit={sendMessage} />
 		</>
 	);
 };

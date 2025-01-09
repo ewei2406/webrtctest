@@ -1,14 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Result } from "../util/result";
 
-type UseRTCProps = {
-	/**
-	 * Disable using stun/turn servers, will only work between devices on same network
-	 */
-	localOnly: boolean;
-	onMessage: (message: MessageEvent) => void;
-};
-
 const DEFAULT_RTC_CONFIG: RTCConfiguration = {
 	iceCandidatePoolSize: 1,
 	iceServers: [
@@ -21,20 +13,35 @@ const DEFAULT_RTC_CONFIG: RTCConfiguration = {
 const DEFAULT_DATACHANNEL_LABEL = "chat";
 
 type ConnectionState =
-	| "disconnected"
-	| "readying"
-	| "ready"
-	| "connecting"
-	| "connected";
+	| { variant: "error"; error: string }
+	| { variant: "disconnected" }
+	| { variant: "readying" }
+	| { variant: "ready" }
+	| { variant: "connecting" }
+	| { variant: "connected" };
 
-const useRTC = (props: UseRTCProps) => {
+type DataChannelData = string | Blob | ArrayBuffer | ArrayBufferView;
+
+type UseRTCProps<T extends DataChannelData> = {
+	/**
+	 * Disable using stun/turn servers, will only work between devices on same network
+	 */
+	localOnly: boolean;
+	onRecieveMessage: (data: T) => void;
+	onSendMessage: (data: T) => void;
+	isOfferCreator: boolean;
+};
+
+const useRTC = <T extends DataChannelData = string>(props: UseRTCProps<T>) => {
 	const dataChannelRef = useRef<RTCDataChannel>();
 	const peerConnectionRef = useRef<RTCPeerConnection>();
-	const [connectionState, setConnectionState] =
-		useState<ConnectionState>("disconnected");
+	const [connectionState, setConnectionState] = useState<ConnectionState>({
+		variant: "disconnected",
+	});
 
 	const [offer, setOffer] = useState<RTCSessionDescriptionInit | undefined>();
 	const [answer, setAnswer] = useState<RTCSessionDescriptionInit | undefined>();
+	const [resetCount, setResetCount] = useState(0);
 
 	const initializeConnection = useCallback((): Result => {
 		// Connection already exists.
@@ -49,14 +56,14 @@ const useRTC = (props: UseRTCProps) => {
 		const initializeDataChannel = (channel: RTCDataChannel) => {
 			dataChannelRef.current = channel;
 			dataChannelRef.current.onopen = () => {
-				setConnectionState("connected");
+				setConnectionState({ variant: "connected" });
 			};
 			dataChannelRef.current.onmessage = (event) => {
-				props.onMessage(event);
+				props.onRecieveMessage(event.data);
 			};
 		};
 
-		setConnectionState("ready");
+		setConnectionState({ variant: "ready" });
 		const config = props.localOnly ? {} : DEFAULT_RTC_CONFIG;
 		peerConnectionRef.current = new RTCPeerConnection(config);
 		peerConnectionRef.current.ondatachannel = (event) => {
@@ -65,10 +72,10 @@ const useRTC = (props: UseRTCProps) => {
 		peerConnectionRef.current.oniceconnectionstatechange = () => {
 			switch (peerConnectionRef.current?.iceConnectionState) {
 				case "disconnected":
-					setConnectionState("disconnected");
+					setConnectionState({ variant: "disconnected" });
 					break;
 				default:
-					setConnectionState("connecting");
+					setConnectionState({ variant: "connecting" });
 			}
 		};
 
@@ -87,7 +94,7 @@ const useRTC = (props: UseRTCProps) => {
 		dataChannelRef.current = undefined;
 		setOffer(undefined);
 		setAnswer(undefined);
-		setConnectionState("disconnected");
+		setConnectionState({ variant: "disconnected" });
 		return { variant: "ok" };
 	}, []);
 
@@ -99,7 +106,7 @@ const useRTC = (props: UseRTCProps) => {
 
 			try {
 				await peerConnectionRef.current.setRemoteDescription(description);
-				setConnectionState("connecting");
+				setConnectionState({ variant: "disconnected" });
 				// catch the operationError
 			} catch (e) {
 				return { variant: "error", error: (e as Error).message };
@@ -155,43 +162,57 @@ const useRTC = (props: UseRTCProps) => {
 			) {
 				return;
 			}
-			setConnectionState("ready");
+			setConnectionState({ variant: "ready" });
 			setOffer(peerConnectionRef.current.localDescription);
 		};
 
 		const offer = await peerConnectionRef.current.createOffer();
 		await peerConnectionRef.current.setLocalDescription(offer);
-		setConnectionState("readying");
+		setConnectionState({ variant: "readying" });
 
 		return { variant: "ok" };
 	}, []);
 
-	const sendMessage = (data: string): Result => {
-		if (!dataChannelRef.current) {
-			return { variant: "error", error: "Data channel not ready." };
-		}
-		if (dataChannelRef.current.readyState !== "open") {
-			return { variant: "error", error: "Data channel not open." };
-		}
-		dataChannelRef.current.send(data);
-		return { variant: "ok" };
-	};
+	const sendMessage = useCallback(
+		(data: T): Result => {
+			if (!dataChannelRef.current) {
+				return { variant: "error", error: "Data channel not ready." };
+			}
+			if (dataChannelRef.current.readyState !== "open") {
+				return { variant: "error", error: "Data channel not open." };
+			}
+			// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+			// @ts-ignore
+			dataChannelRef.current.send(data);
+			props.onSendMessage(data);
+			return { variant: "ok" };
+		},
+		[props]
+	);
 
 	useEffect(() => {
 		initializeConnection();
+		if (props.isOfferCreator) {
+			createOffer().then((result) => {
+				if (result.variant === "error") {
+					setConnectionState(result);
+				}
+			});
+		}
+
 		return () => {
 			closeConnection();
 		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [props.localOnly]);
+	}, [props.localOnly, props.isOfferCreator, resetCount]);
 
 	return {
 		connectionState,
 		offer,
-		createOffer,
 		answer,
 		setRemoteDescription,
 		sendMessage,
+		resetConnection: () => setResetCount((x) => x + 1),
 	};
 };
 
