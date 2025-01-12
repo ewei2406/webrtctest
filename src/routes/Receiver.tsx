@@ -1,6 +1,6 @@
 import { NavLink } from "react-router";
 import useChat from "../hooks/useChat";
-import ChatHistory from "../components/Chat/ChatHistory";
+import ChatHistory from "../components/RTC/Chat/ChatHistory";
 import ChatInput from "../components/RTC/Chat/ChatInput";
 import useCommunication from "../hooks/useCommunication";
 import { useState } from "react";
