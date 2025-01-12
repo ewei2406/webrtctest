@@ -1,6 +1,12 @@
 import { ChangeEvent, KeyboardEvent, useState } from "react";
 
-const ChatInput = ({ onSubmit }: { onSubmit: (message: string) => void }) => {
+const ChatInput = ({
+	onSubmit,
+	disabled,
+}: {
+	onSubmit: (message: string) => void;
+	disabled?: boolean;
+}) => {
 	const [chatInput, setChatInput] = useState<string>("");
 
 	const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -21,6 +27,7 @@ const ChatInput = ({ onSubmit }: { onSubmit: (message: string) => void }) => {
 	return (
 		<div>
 			<input
+				disabled={disabled}
 				value={chatInput}
 				onChange={handleChange}
 				onKeyDown={handleKeyDown}

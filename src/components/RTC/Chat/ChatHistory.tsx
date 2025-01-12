@@ -1,6 +1,4 @@
-import { Message } from "../../hooks/useChat";
-
-const ChatHistory = (props: { messages: Message[] }) => {
+const ChatHistory = (props: { messages: { id: string; data: string }[] }) => {
 	return (
 		<div>
 			{props.messages.map((msg) => (
