@@ -1,8 +1,8 @@
 import { useState } from "react";
-import RTCClient from "../../../RTC/RTCClient";
-import RTCStatus from "../RTCStatus";
+import RTCBase from "../../../RTC/RTCBase";
+import Chat from "../Chat";
 
-const HostSlot = ({ client }: { client: RTCClient }) => {
+const ClientWidget = ({ client }: { client: RTCBase }) => {
 	const [offerSDP, setOfferSDP] = useState("");
 
 	const handleSubmit = async () => {
@@ -26,9 +26,9 @@ const HostSlot = ({ client }: { client: RTCClient }) => {
 			></textarea>
 			<button onClick={handleSubmit}>Submit Offer</button>
 
-			<RTCStatus rtc={client} />
+			<Chat dc={client.dcs.get("chat")!} rtc={client} />
 		</div>
 	);
 };
 
-export default HostSlot;
+export default ClientWidget;

@@ -12,10 +12,13 @@ class RTCBase {
 	public readonly id = getUUID();
 	public readonly dcs = new Map<string, RTCDataChannel>();
 
+	private onMessageMap = new Map<string, (ev: MessageEvent) => void>();
 	public onError: (label: string, ev: RTCErrorEvent) => void = console.error;
-	public onMessage: (label: string, ev: MessageEvent) => void = console.log;
 	public onOpen: (label: string, ev: Event) => void = console.log;
 	public onClose: (label: string, ev: Event) => void = console.log;
+	public setOnMessage(label: string, fn: (ev: MessageEvent) => void) {
+		this.onMessageMap.set(label, fn);
+	}
 
 	constructor(props: {
 		config?: RTCConfiguration;
@@ -25,7 +28,10 @@ class RTCBase {
 			dc.onerror = (ev) => this.onError(dc.label, ev);
 			dc.onopen = (ev) => this.onOpen(dc.label, ev);
 			dc.onclose = (ev) => this.onClose(dc.label, ev);
-			dc.onmessage = (ev) => this.onMessage(dc.label, ev);
+			dc.onmessage = (ev) => {
+				const fn = this.onMessageMap.get(dc.label) || console.log;
+				return fn(ev);
+			};
 			this.dcs.set(dc.label, dc);
 		};
 
@@ -58,7 +64,7 @@ class RTCBase {
 		return { variant: "ok" };
 	}
 
-	protected async ICECompleted(): Promise<Result> {
+	private async ICECompleted(): Promise<Result> {
 		if (this.pc.iceGatheringState === "complete") return { variant: "ok" };
 
 		return new Promise<Result>((resolve) => {
@@ -76,6 +82,54 @@ class RTCBase {
 				}
 			};
 		});
+	}
+
+	public async submitOffer(
+		offer: RTCSessionDescriptionInit
+	): Promise<Result<RTCSessionDescriptionInit>> {
+		await this.pc.setRemoteDescription(offer);
+		const answer = await this.pc.createAnswer();
+		await this.pc.setLocalDescription(answer);
+
+		const ICEResult = await this.ICECompleted();
+		if (ICEResult.variant === "error") {
+			return ICEResult;
+		}
+
+		if (!this.pc.localDescription) {
+			return {
+				variant: "error",
+				error: "Failed to create answer.",
+			};
+		}
+
+		return { variant: "ok", value: this.pc.localDescription };
+	}
+
+	public async createOffer(): Promise<Result<RTCSessionDescriptionInit>> {
+		const offer = await this.pc.createOffer();
+		await this.pc.setLocalDescription(offer);
+
+		const ICEResult = await this.ICECompleted();
+		if (ICEResult.variant === "error") {
+			return ICEResult;
+		}
+
+		if (!this.pc.localDescription) {
+			return {
+				variant: "error",
+				error: "Failed to create offer.",
+			};
+		}
+
+		return {
+			variant: "ok",
+			value: this.pc.localDescription,
+		};
+	}
+
+	public async submitAnswer(answer: RTCSessionDescriptionInit) {
+		this.pc.setRemoteDescription(answer);
 	}
 }
 

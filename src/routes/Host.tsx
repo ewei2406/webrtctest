@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
-import RTCHost from "../RTC/RTCHost";
-import HostSlot from "../components/RTC/Host";
+import RTCBase from "../RTC/RTCBase";
+import HostWidget from "../components/RTC/HostWidget";
 
 const Host = () => {
-	const [hosts, setHosts] = useState<RTCHost[]>([]);
+	const [hosts, setHosts] = useState<RTCBase[]>([]);
 
 	const addHost = () => {
-		const newHost = new RTCHost({ dataChannels: [{ label: "chat" }] });
+		const newHost = new RTCBase({ dataChannels: [{ label: "chat" }] });
 		setHosts((hosts) => [...hosts, newHost]);
 	};
 
@@ -32,7 +32,7 @@ const Host = () => {
 			<h3>Slots</h3>
 			<div>
 				{hosts.map((host) => (
-					<HostSlot
+					<HostWidget
 						key={host.id}
 						host={host}
 						remove={() => removeHost(host.id)}

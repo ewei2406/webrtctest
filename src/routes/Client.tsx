@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
-import RTCClient from "../RTC/RTCClient";
-import ClientSlot from "../components/RTC/Client";
+import ClientSlot from "../components/RTC/ClientWidget";
+import RTCBase from "../RTC/RTCBase";
 
 const Client = () => {
-	const [client] = useState(
-		new RTCClient({ dataChannels: [{ label: "chat" }] })
-	);
+	const [client] = useState(new RTCBase({ dataChannels: [{ label: "chat" }] }));
 
 	return (
 		<>

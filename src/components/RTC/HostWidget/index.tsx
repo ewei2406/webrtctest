@@ -1,9 +1,15 @@
 import { useState } from "react";
-import RTCHost from "../../../RTC/RTCHost";
 import RTCStatus from "../RTCStatus";
 import Chat from "../Chat";
+import RTCBase from "../../../RTC/RTCBase";
 
-const HostSlot = ({ host, remove }: { host: RTCHost; remove: () => void }) => {
+const HostWidget = ({
+	host,
+	remove,
+}: {
+	host: RTCBase;
+	remove: () => void;
+}) => {
 	const [answerSDP, setAnswerSDP] = useState("");
 
 	const copyOffer = async () => {
@@ -36,9 +42,9 @@ const HostSlot = ({ host, remove }: { host: RTCHost; remove: () => void }) => {
 			<button onClick={remove}>Remove</button>
 			<br />
 			<strong>Chat</strong>
-			<Chat dc={host.dcs.get("chat")!} />
+			<Chat dc={host.dcs.get("chat")!} rtc={host} />
 		</div>
 	);
 };
 
-export default HostSlot;
+export default HostWidget;

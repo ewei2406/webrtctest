@@ -3,18 +3,17 @@ import useChat from "../../../hooks/useChat";
 import ChatHistory from "./ChatHistory";
 import ChatInput from "./ChatInput";
 import DCStatus from "../DCStatus";
+import RTCBase from "../../../RTC/RTCBase";
 
-const Chat = ({ dc }: { dc: RTCDataChannel }) => {
+const Chat = ({ dc, rtc }: { dc: RTCDataChannel; rtc: RTCBase }) => {
 	const [isReady, setIsReady] = useState(false);
 	const { messages, addMessage } = useChat();
 
 	useEffect(() => {
-		const prev = dc.onmessage ? dc.onmessage.bind(dc) : null;
-		dc.onmessage = (ev) => {
+		rtc.setOnMessage("chat", (ev) => {
 			addMessage(ev.data);
-			return prev ? prev(ev) : null;
-		};
-	}, [addMessage, dc]);
+		});
+	}, [addMessage, rtc]);
 
 	const onSubmit = (message: string) => {
 		dc.send(message);

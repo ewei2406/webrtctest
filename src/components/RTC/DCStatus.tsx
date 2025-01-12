@@ -24,7 +24,7 @@ const DCStatus = ({
 			dc.removeEventListener("open", open);
 			dc.removeEventListener("close", close);
 		};
-	}, [dc]);
+	}, [dc, onStatusChange]);
 
 	return (
 		<div style={{ border: "1px solid gray" }}>
