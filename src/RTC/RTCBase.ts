@@ -12,24 +12,20 @@ class RTCBase {
 	public readonly id = getUUID();
 	public readonly dcs = new Map<string, RTCDataChannel>();
 
+	public onError: (label: string, ev: RTCErrorEvent) => void = console.error;
+	public onMessage: (label: string, ev: MessageEvent) => void = console.log;
+	public onOpen: (label: string, ev: Event) => void = console.log;
+	public onClose: (label: string, ev: Event) => void = console.log;
+
 	constructor(props: {
 		config?: RTCConfiguration;
 		dataChannels: DataChannelProps[];
-		onMessage?: (label: string, ev: MessageEvent) => void;
-		onError?: (label: string, ev: RTCErrorEvent) => void;
-		onOpen?: (label: string, ev: Event) => void;
-		onClose?: (label: string, ev: Event) => void;
 	}) {
-		const onError = props.onError || console.error;
-		const onOpen = props.onOpen || console.log;
-		const onClose = props.onClose || console.log;
-		const onMessage = props.onMessage || console.log;
-
 		const addDc = (dc: RTCDataChannel) => {
-			dc.onerror = (ev) => onError(dc.label, ev);
-			dc.onopen = (ev) => onOpen(dc.label, ev);
-			dc.onclose = (ev) => onClose(dc.label, ev);
-			dc.onmessage = (ev) => onMessage(dc.label, ev);
+			dc.onerror = (ev) => this.onError(dc.label, ev);
+			dc.onopen = (ev) => this.onOpen(dc.label, ev);
+			dc.onclose = (ev) => this.onClose(dc.label, ev);
+			dc.onmessage = (ev) => this.onMessage(dc.label, ev);
 			this.dcs.set(dc.label, dc);
 		};
 
