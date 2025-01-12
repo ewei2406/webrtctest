@@ -13,7 +13,7 @@ class RTCBase {
 	public readonly dcs = new Map<string, RTCDataChannel>();
 
 	private onMessageMap = new Map<string, (ev: MessageEvent) => void>();
-	public onError: (label: string, ev: RTCErrorEvent) => void = console.error;
+	public onError: (label: string, ev: Event) => void = console.error;
 	public onOpen: (label: string, ev: Event) => void = console.log;
 	public onClose: (label: string, ev: Event) => void = console.log;
 	public setOnMessage(label: string, fn: (ev: MessageEvent) => void) {

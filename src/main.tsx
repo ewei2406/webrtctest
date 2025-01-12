@@ -5,7 +5,6 @@ import Sender from "./routes/Sender.tsx";
 import Receiver from "./routes/Receiver.tsx";
 import Host from "./routes/Host.tsx";
 import Client from "./routes/Client.tsx";
-import "./main.css";
 
 createRoot(document.getElementById("root")!).render(
 	<BrowserRouter>
