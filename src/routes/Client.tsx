@@ -8,9 +8,8 @@ const Client = () => {
 
 	return (
 		<>
-			<NavLink to="/">Home</NavLink>
+			<NavLink to="/">Home</NavLink> <NavLink to="/host">Host</NavLink>
 			<h1>Client</h1>
-
 			<ClientSlot client={client} />
 		</>
 	);

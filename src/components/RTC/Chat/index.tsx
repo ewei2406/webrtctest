@@ -10,10 +10,12 @@ const Chat = ({ dc, rtc }: { dc: RTCDataChannel; rtc: RTCBase }) => {
 	const { messages, addMessage } = useChat();
 
 	useEffect(() => {
-		rtc.setOnMessage("chat", (ev) => {
-			addMessage(ev.data);
-		});
-	}, [addMessage, rtc]);
+		const onMessage = (e: MessageEvent) => addMessage(e.data);
+		rtc.addMessageListener(dc.label, onMessage);
+		return () => {
+			rtc.removeMessageListener(dc.label, onMessage);
+		};
+	}, [addMessage, dc.label, rtc]);
 
 	const onSubmit = (message: string) => {
 		dc.send(message);

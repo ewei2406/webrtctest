@@ -12,13 +12,9 @@ class RTCBase {
 	public readonly id = getUUID();
 	public readonly dcs = new Map<string, RTCDataChannel>();
 
-	private onMessageMap = new Map<string, (ev: MessageEvent) => void>();
 	public onError: (label: string, ev: Event) => void = console.error;
 	public onOpen: (label: string, ev: Event) => void = console.log;
 	public onClose: (label: string, ev: Event) => void = console.log;
-	public setOnMessage(label: string, fn: (ev: MessageEvent) => void) {
-		this.onMessageMap.set(label, fn);
-	}
 
 	constructor(props: {
 		config?: RTCConfiguration;
@@ -28,10 +24,6 @@ class RTCBase {
 			dc.onerror = (ev) => this.onError(dc.label, ev);
 			dc.onopen = (ev) => this.onOpen(dc.label, ev);
 			dc.onclose = (ev) => this.onClose(dc.label, ev);
-			dc.onmessage = (ev) => {
-				const fn = this.onMessageMap.get(dc.label) || console.log;
-				return fn(ev);
-			};
 			this.dcs.set(dc.label, dc);
 		};
 
@@ -130,6 +122,36 @@ class RTCBase {
 
 	public async submitAnswer(answer: RTCSessionDescriptionInit) {
 		this.pc.setRemoteDescription(answer);
+	}
+
+	public addMessageListener(
+		label: string,
+		onMessage: (message: MessageEvent) => void
+	): Result {
+		const dc = this.dcs.get(label);
+		if (!dc) {
+			return {
+				variant: "error",
+				error: `Channel with label ${label} not found.`,
+			};
+		}
+		dc.addEventListener("message", onMessage);
+		return { variant: "ok" };
+	}
+
+	public removeMessageListener(
+		label: string,
+		onMessage: (message: MessageEvent) => void
+	): Result {
+		const dc = this.dcs.get(label);
+		if (!dc) {
+			return {
+				variant: "error",
+				error: `Channel with label ${label} not found.`,
+			};
+		}
+		dc.removeEventListener("message", onMessage);
+		return { variant: "ok" };
 	}
 }
 

@@ -25,9 +25,8 @@ const Host = () => {
 
 	return (
 		<>
-			<NavLink to="/">Home</NavLink>
+			<NavLink to="/">Home</NavLink> <NavLink to="/client">Client</NavLink>
 			<h1>Host</h1>
-
 			<button onClick={addHost}>Add Host</button>
 			<h3>Slots</h3>
 			<div>
