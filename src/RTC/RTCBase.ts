@@ -82,30 +82,6 @@ class RTCBase {
 			};
 		});
 	}
-
-	public Status = () => {
-		const [pcStatus, setPcStatus] = useState(this.pc.iceConnectionState);
-		useEffect(() => {
-			this.pc.oniceconnectionstatechange = () =>
-				setPcStatus(this.pc.iceConnectionState);
-		}, []);
-
-		const dcStatuses: ReactNode[] = [];
-		this.dcs.forEach((dc) =>
-			dcStatuses.push(
-				<p key={dc.label + dc.readyState}>
-					{dc.label}: {dc.readyState}
-				</p>
-			)
-		);
-
-		return (
-			<div>
-				<p>Status: {pcStatus}</p>
-				{dcStatuses}
-			</div>
-		);
-	};
 }
 
 export default RTCBase;
