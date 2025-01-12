@@ -6,9 +6,21 @@ import HostSlot from "../components/RTC/Host";
 const Host = () => {
 	const [hosts, setHosts] = useState<RTCHost[]>([]);
 
-	const addClientSlot = () => {
+	const addHost = () => {
 		const newHost = new RTCHost({ dataChannels: [{ label: "chat" }] });
-		setHosts([...hosts, newHost]);
+		setHosts((hosts) => [...hosts, newHost]);
+	};
+
+	const removeHost = (id: string) => {
+		setHosts((hosts) =>
+			hosts.filter((h) => {
+				if (h.id === id) {
+					h.close();
+					return false;
+				}
+				return true;
+			})
+		);
 	};
 
 	return (
@@ -16,11 +28,15 @@ const Host = () => {
 			<NavLink to="/">Home</NavLink>
 			<h1>Host</h1>
 
-			<button onClick={addClientSlot}>Add Client Slot</button>
+			<button onClick={addHost}>Add Host</button>
 			<h3>Slots</h3>
 			<div>
 				{hosts.map((host) => (
-					<HostSlot key={host.id} host={host} />
+					<HostSlot
+						key={host.id}
+						host={host}
+						remove={() => removeHost(host.id)}
+					/>
 				))}
 			</div>
 		</>

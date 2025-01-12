@@ -2,7 +2,7 @@ import { useState } from "react";
 import RTCHost from "../../../RTC/RTCHost";
 import RTCStatus from "../RTCStatus";
 
-const HostSlot = ({ host }: { host: RTCHost }) => {
+const HostSlot = ({ host, remove }: { host: RTCHost; remove: () => void }) => {
 	const [answerSDP, setAnswerSDP] = useState("");
 
 	const copyOffer = async () => {
@@ -32,6 +32,7 @@ const HostSlot = ({ host }: { host: RTCHost }) => {
 			/>
 			<button onClick={handleSubmit}>Submit Answer</button>
 			<RTCStatus rtc={host} />
+			<button onClick={remove}>Remove</button>
 		</div>
 	);
 };
