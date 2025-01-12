@@ -1,5 +1,6 @@
 import { useState } from "react";
-import RTCHost from "../../RTC/RTCHost";
+import RTCHost from "../../../RTC/RTCHost";
+import RTCStatus from "../RTCStatus";
 
 const HostSlot = ({ host }: { host: RTCHost }) => {
 	const [answerSDP, setAnswerSDP] = useState("");
@@ -30,6 +31,7 @@ const HostSlot = ({ host }: { host: RTCHost }) => {
 				onChange={(e) => setAnswerSDP(e.target.value)}
 			/>
 			<button onClick={handleSubmit}>Submit Answer</button>
+			<RTCStatus rtc={host} />
 		</div>
 	);
 };

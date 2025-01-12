@@ -1,5 +1,6 @@
 import { useState } from "react";
-import RTCClient from "../../RTC/RTCClient";
+import RTCClient from "../../../RTC/RTCClient";
+import RTCStatus from "../RTCStatus";
 
 const HostSlot = ({ client }: { client: RTCClient }) => {
 	const [offerSDP, setOfferSDP] = useState("");
@@ -24,6 +25,8 @@ const HostSlot = ({ client }: { client: RTCClient }) => {
 				onChange={(e) => setOfferSDP(e.target.value)}
 			></textarea>
 			<button onClick={handleSubmit}>Submit Offer</button>
+
+			<RTCStatus rtc={client} />
 		</div>
 	);
 };

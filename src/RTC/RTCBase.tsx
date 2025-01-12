@@ -1,15 +1,17 @@
+import { ReactNode, useEffect, useState } from "react";
 import { ICE_TIMEOUT_MS } from "../util/constants";
 import { Result } from "../util/result";
 import { getUUID } from "../util/uuid";
 
-type DataChannelProps = RTCDataChannelInit & {
+type DataChannelProps = {
 	label: string;
+	init?: RTCDataChannelInit;
 };
 
 class RTCBase {
-	protected pc: RTCPeerConnection;
+	public readonly pc: RTCPeerConnection;
 	public readonly id = getUUID();
-	protected dcs = new Map<string, RTCDataChannel>();
+	public readonly dcs = new Map<string, RTCDataChannel>();
 
 	constructor(props: {
 		config?: RTCConfiguration;
@@ -81,7 +83,29 @@ class RTCBase {
 		});
 	}
 
-  
+	public Status = () => {
+		const [pcStatus, setPcStatus] = useState(this.pc.iceConnectionState);
+		useEffect(() => {
+			this.pc.oniceconnectionstatechange = () =>
+				setPcStatus(this.pc.iceConnectionState);
+		}, []);
+
+		const dcStatuses: ReactNode[] = [];
+		this.dcs.forEach((dc) =>
+			dcStatuses.push(
+				<p key={dc.label + dc.readyState}>
+					{dc.label}: {dc.readyState}
+				</p>
+			)
+		);
+
+		return (
+			<div>
+				<p>Status: {pcStatus}</p>
+				{dcStatuses}
+			</div>
+		);
+	};
 }
 
 export default RTCBase;

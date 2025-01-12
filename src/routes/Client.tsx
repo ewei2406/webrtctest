@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
 import RTCClient from "../RTC/RTCClient";
-import ClientSlot from "../components/ClientSlot";
+import ClientSlot from "../components/RTC/Client";
 
 const Client = () => {
 	const [client] = useState(

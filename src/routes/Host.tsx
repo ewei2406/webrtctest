@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
 import RTCHost from "../RTC/RTCHost";
-import HostSlot from "../components/HostSlot";
+import HostSlot from "../components/RTC/Host";
 
 const Host = () => {
 	const [hosts, setHosts] = useState<RTCHost[]>([]);
