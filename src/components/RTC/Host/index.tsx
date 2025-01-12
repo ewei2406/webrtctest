@@ -1,6 +1,7 @@
 import { useState } from "react";
 import RTCHost from "../../../RTC/RTCHost";
 import RTCStatus from "../RTCStatus";
+import Chat from "../Chat";
 
 const HostSlot = ({ host, remove }: { host: RTCHost; remove: () => void }) => {
 	const [answerSDP, setAnswerSDP] = useState("");
@@ -33,6 +34,9 @@ const HostSlot = ({ host, remove }: { host: RTCHost; remove: () => void }) => {
 			<button onClick={handleSubmit}>Submit Answer</button>
 			<RTCStatus rtc={host} />
 			<button onClick={remove}>Remove</button>
+			<br />
+			<strong>Chat</strong>
+			<Chat dc={host.dcs.get("chat")!} />
 		</div>
 	);
 };

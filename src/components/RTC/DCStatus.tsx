@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 
-const DCStatus = ({ dc }: { dc: RTCDataChannel }) => {
+const DCStatus = ({
+	dc,
+	onStatusChange,
+}: {
+	dc: RTCDataChannel;
+	onStatusChange: (status: RTCDataChannelState) => void;
+}) => {
 	const [status, setStatus] = useState(dc.readyState);
 	useEffect(() => {
-		const open = () => setStatus("open");
-		const close = () => setStatus("closed");
+		const open = () => {
+			onStatusChange("open");
+			setStatus("open");
+		};
+		const close = () => {
+			onStatusChange("closed");
+			setStatus("closed");
+		};
 
 		dc.addEventListener("open", open);
 		dc.addEventListener("close", close);

@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useChat from "../../../hooks/useChat";
 import ChatHistory from "./ChatHistory";
 import ChatInput from "./ChatInput";
+import DCStatus from "../DCStatus";
 
 const Chat = ({ dc }: { dc: RTCDataChannel }) => {
+	const [isReady, setIsReady] = useState(false);
 	const { messages, addMessage } = useChat();
 
 	useEffect(() => {
@@ -19,10 +21,15 @@ const Chat = ({ dc }: { dc: RTCDataChannel }) => {
 		addMessage(message);
 	};
 
+	const handleStatusChange = (status: RTCDataChannelState) => {
+		setIsReady(status === "open");
+	};
+
 	return (
 		<>
+			<DCStatus dc={dc} onStatusChange={handleStatusChange} />
 			<ChatHistory messages={messages} />
-			<ChatInput onSubmit={onSubmit} />
+			<ChatInput onSubmit={onSubmit} disabled={!isReady} />
 		</>
 	);
 };
