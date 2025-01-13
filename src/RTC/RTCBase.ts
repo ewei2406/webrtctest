@@ -1,5 +1,4 @@
 import { DEFAULT_RTC_CONFIG, ICE_TIMEOUT_MS } from "../util/constants";
-import getMic from "../util/getMic";
 import { Result } from "../util/result";
 import { getUUID } from "../util/uuid";
 
@@ -13,7 +12,7 @@ class RTCBase {
 	public readonly id = getUUID();
 	public readonly dcs = new Map<string, RTCDataChannel>();
 
-	public onError: (label: string, ev: Event) => void = console.error;
+	public onError: (label: string, ev: Event) => void = console.warn;
 	public onOpen: (label: string, ev: Event) => void = console.log;
 	public onClose: (label: string, ev: Event) => void = console.log;
 
@@ -81,11 +80,6 @@ class RTCBase {
 	public async submitOffer(
 		offer: RTCSessionDescriptionInit
 	): Promise<Result<RTCSessionDescriptionInit>> {
-		const mic = await getMic();
-		if (mic.variant === "error") {
-			return mic;
-		}
-
 		await this.pc.setRemoteDescription(offer);
 		const answer = await this.pc.createAnswer();
 		await this.pc.setLocalDescription(answer);
@@ -106,11 +100,6 @@ class RTCBase {
 	}
 
 	public async createOffer(): Promise<Result<RTCSessionDescriptionInit>> {
-		const mic = await getMic();
-		if (mic.variant === "error") {
-			return mic;
-		}
-
 		const offer = await this.pc.createOffer();
 		await this.pc.setLocalDescription(offer);
 

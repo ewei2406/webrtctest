@@ -5,9 +5,6 @@ import FBSignaler from "./Signaler";
 const COMM_DCINIT = [
 	{
 		label: "chat",
-		init: {
-			ordered: true,
-		},
 	},
 ];
 
@@ -63,7 +60,7 @@ class Communication {
 	close() {
 		this.unsub?.();
 		this.rtc.close();
-    FBSignaler.closeOffer(this.rtc.id);
+		FBSignaler.closeOffer(this.rtc.id);
 	}
 }
 
