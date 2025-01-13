@@ -1,32 +1,23 @@
 import { useState } from "react";
-import RTCBase from "../../../RTC/RTCBase";
 import Chat from "../Chat";
+import Communication from "../../../RTC/Communication";
 
-const ClientWidget = ({ client }: { client: RTCBase }) => {
-	const [offerSDP, setOfferSDP] = useState("");
-
-	const handleSubmit = async () => {
-		const answer = await client.submitOffer({ type: "offer", sdp: offerSDP });
-		if (answer.variant === "error") {
-			return alert("Failed to create answer: " + answer.error);
-		}
-
-		await navigator.clipboard.writeText(answer.value.sdp!);
-		alert("Answer SDP copied to clipboard.");
-	};
+const ClientWidget = ({ client }: { client: Communication }) => {
+	const [otherId, setOtherId] = useState("");
 
 	return (
 		<div style={{ border: "1px solid black", margin: 10 }}>
-			<strong>{client.id}</strong>
+			<strong>{client.rtc.id}</strong>
 			<br />
-			<textarea
-				placeholder="Enter Offer"
-				value={offerSDP}
-				onChange={(e) => setOfferSDP(e.target.value)}
-			></textarea>
-			<button onClick={handleSubmit}>Submit Offer</button>
+			<input
+				type="text"
+				placeholder="Other ID"
+				value={otherId}
+				onChange={(e) => setOtherId(e.target.value)}
+			/>
+			<button onClick={() => client.call(otherId)}>Start Call</button>
 
-			<Chat dc={client.dcs.get("chat")!} rtc={client} />
+			<Chat chat={client} id={client.rtc.id} />
 		</div>
 	);
 };

@@ -1,45 +1,41 @@
-import { doc, getDoc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import {
+	deleteDoc,
+	doc,
+	getDoc,
+	onSnapshot,
+	setDoc,
+	updateDoc,
+} from "firebase/firestore";
 import { db } from "../util/firebase";
 import { Result } from "../util/result";
 
-export interface Signaler {
-	id: string;
-	getOffer(targetId: string): Promise<Result<RTCSessionDescriptionInit>>;
-	setOffer(targetId: string, offer: RTCSessionDescriptionInit): Promise<Result>;
-	sendAnswer(
-		targetId: string,
-		answer: RTCSessionDescriptionInit
-	): Promise<Result>;
-	onAnswer(answer: RTCSessionDescriptionInit): void;
-	listen(listenId: string): void;
-}
-
-class FBSignaler implements Signaler {
-	public id = "";
-	onAnswer: (answer: RTCSessionDescriptionInit) => void = () => {};
-
-	listen(listenId: string) {
+class FBSignaler {
+	static listen(
+		listenId: string,
+		onAnswer: (answer: RTCSessionDescriptionInit) => void
+	) {
 		const signalRef = doc(db, "signal", listenId);
-		onSnapshot(signalRef, (doc) => {
+		const unsub = onSnapshot(signalRef, (doc) => {
 			const data = doc.data();
 			if (!data) return;
-			if (data.answerSdp && data.answerId !== this.id) {
-				this.onAnswer({
+			if (data.answerSdp && data.answerId !== listenId) {
+				onAnswer({
 					type: "answer",
 					sdp: data.answerSdp,
 				});
 			}
 		});
+		return unsub;
 	}
 
-	async setOffer(
+	static async setOffer(
 		targetId: string,
 		offer: RTCSessionDescriptionInit
 	): Promise<Result> {
 		try {
 			const signalRef = doc(db, "signal", targetId);
 			await setDoc(signalRef, {
-				offerId: this.id,
+				offerId: targetId,
 				offerSdp: offer.sdp,
 			});
 			return { variant: "ok" };
@@ -48,14 +44,25 @@ class FBSignaler implements Signaler {
 		}
 	}
 
-	async sendAnswer(
+	static async closeOffer(targetId: string): Promise<Result> {
+		try {
+			const signalRef = doc(db, "signal", targetId);
+			await deleteDoc(signalRef);
+			return { variant: "ok" };
+		} catch (error) {
+			return { variant: "error", error: (error as Error).message };
+		}
+	}
+
+	static async sendAnswer(
+		thisId: string,
 		targetId: string,
 		answer: RTCSessionDescriptionInit
 	): Promise<Result> {
 		try {
 			const signalRef = doc(db, "signal", targetId);
 			await updateDoc(signalRef, {
-				answerId: this.id,
+				answerId: thisId,
 				answerSdp: answer.sdp,
 			});
 			return { variant: "ok" };
@@ -64,7 +71,9 @@ class FBSignaler implements Signaler {
 		}
 	}
 
-	async getOffer(targetId: string): Promise<Result<RTCSessionDescriptionInit>> {
+	static async getOffer(
+		targetId: string
+	): Promise<Result<RTCSessionDescriptionInit>> {
 		const signalRef = doc(db, "signal", targetId);
 		const docRef = await getDoc(signalRef);
 		const data = docRef.data();

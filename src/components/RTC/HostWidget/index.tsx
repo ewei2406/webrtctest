@@ -1,48 +1,44 @@
-import { useState } from "react";
-import RTCStatus from "../RTCStatus";
 import Chat from "../Chat";
-import RTCBase from "../../../RTC/RTCBase";
+import Communication from "../../../RTC/Communication";
+import { useState } from "react";
 
 const HostWidget = ({
 	host,
 	remove,
 }: {
-	host: RTCBase;
+	host: Communication;
 	remove: () => void;
 }) => {
-	const [answerSDP, setAnswerSDP] = useState("");
+	const [isOpen, setIsOpen] = useState(false);
 
-	const copyOffer = async () => {
-		const offer = await host.createOffer();
-		if (offer.variant === "error") {
-			return alert("Failed to create offer: " + offer.error);
+	const handleHost = async () => {
+		if (isOpen) {
+			host.close();
+			setIsOpen(false);
+		} else {
+			const res = await host.host();
+			if (res.variant === "ok") {
+				setIsOpen(true);
+			}
 		}
-
-		await navigator.clipboard.writeText(offer.value.sdp!);
-		alert("Offer copied to clipboard");
 	};
 
-	const handleSubmit = async () => {
-		await host.submitAnswer({ type: "answer", sdp: answerSDP });
-		alert("Answer SDP submitted");
+	const copyId = () => {
+		navigator.clipboard.writeText(host.rtc.id);
+		alert("ID copied to clipboard");
 	};
 
 	return (
 		<div style={{ border: "1px solid black", margin: 10 }}>
-			<strong>{host.id}</strong>
+			My id: <strong>{host.rtc.id}</strong>
 			<br />
-			<button onClick={copyOffer}>Copy offer</button>
-			<textarea
-				placeholder="Enter Answer"
-				value={answerSDP}
-				onChange={(e) => setAnswerSDP(e.target.value)}
-			/>
-			<button onClick={handleSubmit}>Submit Answer</button>
-			<RTCStatus rtc={host} />
+			<button onClick={copyId}>Copy ID</button>
+			<button onClick={handleHost}>
+				{isOpen ? "Disable" : "Enable"} calls
+			</button>
 			<button onClick={remove}>Remove</button>
 			<br />
-			<strong>Chat</strong>
-			<Chat dc={host.dcs.get("chat")!} rtc={host} />
+			<Chat chat={host} id={host.rtc.id} />
 		</div>
 	);
 };

@@ -24,6 +24,7 @@ class RTCBase {
 		const addDc = (dc: RTCDataChannel) => {
 			dc.onerror = (ev) => this.onError(dc.label, ev);
 			dc.onopen = (ev) => this.onOpen(dc.label, ev);
+			dc.onmessage = () => {};
 			dc.onclose = (ev) => this.onClose(dc.label, ev);
 			this.dcs.set(dc.label, dc);
 		};

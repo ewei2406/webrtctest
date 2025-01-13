@@ -1,8 +1,8 @@
 import { Result } from "../util/result";
 import RTCBase from "./RTCBase";
-import { Signaler } from "./Signaler";
+import FBSignaler from "./Signaler";
 
-const CHAT_DCINIT = [
+const COMM_DCINIT = [
 	{
 		label: "chat",
 		init: {
@@ -11,20 +11,14 @@ const CHAT_DCINIT = [
 	},
 ];
 
-class Chat<T extends Signaler> {
+class Communication {
 	rtc: RTCBase;
-	signaler: T;
+	unsub?: () => void;
 
-	constructor(signaler: T, onMessage: (message: MessageEvent) => void) {
+	constructor() {
 		this.rtc = new RTCBase({
-			dataChannels: CHAT_DCINIT,
+			dataChannels: COMM_DCINIT,
 		});
-		this.rtc.addMessageListener("chat", onMessage);
-		this.signaler = signaler;
-		this.signaler.onAnswer = (answer) => {
-			this.rtc.submitAnswer(answer);
-		};
-		this.signaler.id = this.rtc.id;
 	}
 
 	async host(): Promise<Result> {
@@ -32,16 +26,18 @@ class Chat<T extends Signaler> {
 		if (offer.variant === "error") {
 			return offer;
 		}
-		const signal = await this.signaler.setOffer(this.rtc.id, offer.value);
+		const signal = await FBSignaler.setOffer(this.rtc.id, offer.value);
 		if (signal.variant === "error") {
 			return signal;
 		}
-		this.signaler.listen(this.rtc.id);
+		this.unsub = FBSignaler.listen(this.rtc.id, (answer) => {
+			this.rtc.submitAnswer(answer);
+		});
 		return { variant: "ok" };
 	}
 
 	async call(targetId: string): Promise<Result> {
-		const remoteOffer = await this.signaler.getOffer(targetId);
+		const remoteOffer = await FBSignaler.getOffer(targetId);
 		if (remoteOffer.variant === "error") {
 			return remoteOffer;
 		}
@@ -49,7 +45,11 @@ class Chat<T extends Signaler> {
 		if (answer.variant === "error") {
 			return answer;
 		}
-		const signal = await this.signaler.sendAnswer(targetId, answer.value);
+		const signal = await FBSignaler.sendAnswer(
+			this.rtc.id,
+			targetId,
+			answer.value
+		);
 		if (signal.variant === "error") {
 			return signal;
 		}
@@ -59,6 +59,12 @@ class Chat<T extends Signaler> {
 	sendMessage(message: string): Result {
 		return this.rtc.sendMessage("chat", message);
 	}
+
+	close() {
+		this.unsub?.();
+		this.rtc.close();
+    FBSignaler.closeOffer(this.rtc.id);
+	}
 }
 
-export default Chat;
+export default Communication;

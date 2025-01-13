@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import RTCBase from "../../RTC/RTCBase";
 
 const RTCStatus = ({ rtc }: { rtc: RTCBase }) => {
@@ -12,21 +12,7 @@ const RTCStatus = ({ rtc }: { rtc: RTCBase }) => {
 		};
 	}, [rtc.pc]);
 
-	const dcStatuses: ReactNode[] = [];
-	rtc.dcs.forEach((dc) =>
-		dcStatuses.push(
-			<p key={dc.label + dc.readyState}>
-				{dc.label}: {dc.readyState}
-			</p>
-		)
-	);
-
-	return (
-		<div>
-			<p>RTC Status: {pcStatus}</p>
-			{dcStatuses}
-		</div>
-	);
+	return <div>RTC Status: {pcStatus}</div>;
 };
 
 export default RTCStatus;

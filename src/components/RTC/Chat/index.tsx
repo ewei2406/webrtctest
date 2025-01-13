@@ -1,36 +1,58 @@
-import { useEffect, useState } from "react";
 import useChat from "../../../hooks/useChat";
 import ChatHistory from "./ChatHistory";
 import ChatInput from "./ChatInput";
-import DCStatus from "../DCStatus";
-import RTCBase from "../../../RTC/RTCBase";
+import RTCStatus from "../RTCStatus";
+import Communication from "../../../RTC/Communication";
+import { useEffect, useState } from "react";
 
-const Chat = ({ dc, rtc }: { dc: RTCDataChannel; rtc: RTCBase }) => {
-	const [isReady, setIsReady] = useState(false);
-	const { messages, addMessage } = useChat();
+const Chat = ({ chat, id }: { chat: Communication; id: string }) => {
+	const [nickname, setNickname] = useState("Joe bob");
+	const {
+		status,
+		messages,
+		sendMessage,
+		remoteAction,
+		setAction,
+		sendNickname,
+		nicknameMap,
+	} = useChat(id, chat.rtc.dcs.get("chat")!);
 
 	useEffect(() => {
-		const onMessage = (e: MessageEvent) => addMessage(e.data);
-		rtc.addMessageListener(dc.label, onMessage);
-		return () => {
-			rtc.removeMessageListener(dc.label, onMessage);
-		};
-	}, [addMessage, dc.label, rtc]);
-
-	const onSubmit = (message: string) => {
-		dc.send(message);
-		addMessage(message);
-	};
-
-	const handleStatusChange = (status: RTCDataChannelState) => {
-		setIsReady(status === "open");
-	};
+		if (status === "open") {
+			sendNickname(nickname);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [status]);
 
 	return (
 		<>
-			<DCStatus dc={dc} onStatusChange={handleStatusChange} />
-			<ChatHistory messages={messages} />
-			<ChatInput onSubmit={onSubmit} disabled={!isReady} />
+			<h3>Chat</h3>
+			Nickname:{" "}
+			<input value={nickname} onChange={(e) => setNickname(e.target.value)} />
+			<button onClick={() => sendNickname(nickname)}>Apply Nickname</button>
+			<RTCStatus rtc={chat.rtc} />
+			Chat status: {status}
+			<div
+				style={{
+					border: "1px solid black",
+					margin: 10,
+					width: 300,
+					display: "flex",
+					flexDirection: "column",
+				}}
+			>
+				<ChatHistory
+					authorId={id}
+					messages={messages}
+					nicknameMap={nicknameMap}
+				/>
+				<p>{remoteAction === "typing" && "Other user is typing..."}</p>
+				<ChatInput
+					onSubmit={sendMessage}
+					setAction={setAction}
+					disabled={status !== "open"}
+				/>
+			</div>
 		</>
 	);
 };
