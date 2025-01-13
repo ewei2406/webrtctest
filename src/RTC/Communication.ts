@@ -2,12 +2,23 @@ import { Result } from "../util/result";
 import RTCBase from "./RTCBase";
 import { Signaler } from "./Signaler";
 
+const CHAT_DCINIT = [
+	{
+		label: "chat",
+		init: {
+			ordered: true,
+		},
+	},
+];
+
 class Chat<T extends Signaler> {
 	rtc: RTCBase;
 	signaler: T;
 
 	constructor(signaler: T, onMessage: (message: MessageEvent) => void) {
-		this.rtc = new RTCBase({ dataChannels: [{ label: "chat" }] });
+		this.rtc = new RTCBase({
+			dataChannels: CHAT_DCINIT,
+		});
 		this.rtc.addMessageListener("chat", onMessage);
 		this.signaler = signaler;
 		this.signaler.onAnswer = (answer) => {

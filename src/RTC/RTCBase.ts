@@ -1,4 +1,5 @@
-import { ICE_TIMEOUT_MS } from "../util/constants";
+import { DEFAULT_RTC_CONFIG, ICE_TIMEOUT_MS } from "../util/constants";
+import getMic from "../util/getMic";
 import { Result } from "../util/result";
 import { getUUID } from "../util/uuid";
 
@@ -27,7 +28,7 @@ class RTCBase {
 			this.dcs.set(dc.label, dc);
 		};
 
-		this.pc = new RTCPeerConnection(props.config);
+		this.pc = new RTCPeerConnection(props.config || DEFAULT_RTC_CONFIG);
 		props.dataChannels.forEach((dcInit) => {
 			const dc = this.pc.createDataChannel(dcInit.label);
 			addDc(dc);
@@ -79,6 +80,11 @@ class RTCBase {
 	public async submitOffer(
 		offer: RTCSessionDescriptionInit
 	): Promise<Result<RTCSessionDescriptionInit>> {
+		const mic = await getMic();
+		if (mic.variant === "error") {
+			return mic;
+		}
+
 		await this.pc.setRemoteDescription(offer);
 		const answer = await this.pc.createAnswer();
 		await this.pc.setLocalDescription(answer);
@@ -99,6 +105,11 @@ class RTCBase {
 	}
 
 	public async createOffer(): Promise<Result<RTCSessionDescriptionInit>> {
+		const mic = await getMic();
+		if (mic.variant === "error") {
+			return mic;
+		}
+
 		const offer = await this.pc.createOffer();
 		await this.pc.setLocalDescription(offer);
 
