@@ -5,3 +5,9 @@ export const getUUID = () => {
 		return v.toString(16);
 	});
 };
+
+export const getColor = (uuid: string) => {
+	const hash = uuid.split("-").join("");
+	const color = `#${hash.slice(0, 6)}`;
+	return color;
+};

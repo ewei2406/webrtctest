@@ -1,12 +1,13 @@
 import { NavLink } from "react-router";
+import "./util/getMic";
 
 const App = () => {
 	return (
 		<>
 			<h1>WebRTC Test</h1>
-			<NavLink to="/send">Sender</NavLink>
+			<NavLink to="/host">Host</NavLink>
 			<br />
-			<NavLink to="/recv">Receiver</NavLink>
+			<NavLink to="/client">Client</NavLink>
 		</>
 	);
 };
