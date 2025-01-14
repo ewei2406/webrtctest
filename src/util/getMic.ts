@@ -19,10 +19,4 @@ const getMic = async (): Promise<Result> => {
 	}
 };
 
-getMic().then((result) => {
-	if (result.variant === "error") {
-		alert("Microphone permission is required to use this app.");
-	}
-});
-
 export default getMic;

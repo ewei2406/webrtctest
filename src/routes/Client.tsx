@@ -2,15 +2,36 @@ import { NavLink } from "react-router";
 import { useState } from "react";
 import MultiClient from "../RTC/multi/MultiClient";
 import Chat from "../components/RTC/Chat";
+import getMic from "../util/getMic";
 
 const Client = () => {
-	const [otherId, setOtherId] = useState("");
+	const [otherId] = useState(() => {
+		const params = new URLSearchParams(window.location.search);
+		const hostId = params.get("hostId");
+		return hostId || "";
+	});
 	const [client] = useState(new MultiClient());
+	const [error, setError] = useState<string>();
+
+	if (!otherId) {
+		return (
+			<>
+				<h1>Error</h1>
+				<p>Invalid invite link.</p>
+			</>
+		);
+	}
 
 	const handleCall = async () => {
+		const micresult = await getMic();
+		if (micresult.variant === "error") {
+			setError(micresult.error);
+			alert("Microphone permission is required to use this app.");
+			return;
+		}
 		const result = await client.call(otherId);
 		if (result.variant === "error") {
-			console.error(result.error);
+			setError(result.error);
 		}
 	};
 
@@ -20,13 +41,8 @@ const Client = () => {
 			<h1>Client</h1>
 			My id: {client.comm.rtc.id}
 			<br />
-			<input
-				type="text"
-				placeholder="Other ID"
-				value={otherId}
-				onChange={(e) => setOtherId(e.target.value)}
-			/>
-			<button onClick={handleCall}>Join</button>
+			<button onClick={handleCall}>Join lobby: {otherId}</button>
+			{error && <p style={{ color: "red" }}>{error}</p>}
 			<Chat id={client.comm.rtc.id} chat={client.comm} />
 		</>
 	);

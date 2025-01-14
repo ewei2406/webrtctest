@@ -40,11 +40,6 @@ class RTCBase {
 		};
 	}
 
-	public close() {
-		this.dcs.forEach((dc) => dc.close());
-		this.pc.close();
-	}
-
 	public sendMessage(channelLabel: string, message: string): Result {
 		const dc = this.dcs.get(channelLabel);
 		if (!dc) {
@@ -122,7 +117,7 @@ class RTCBase {
 	}
 
 	public async submitAnswer(answer: RTCSessionDescriptionInit) {
-		this.pc.setRemoteDescription(answer);
+		return this.pc.setRemoteDescription(answer);
 	}
 
 	public addMessageListener(

@@ -1,5 +1,4 @@
 import useChat from "../../../hooks/useChat";
-import RTCStatus from "../RTCStatus";
 import Communication from "../../../RTC/Communication";
 import { useState } from "react";
 import { getHHMM } from "../../../util/date";
@@ -18,34 +17,48 @@ const Chat = ({ chat, id }: { chat: Communication; id: string }) => {
 
 	return (
 		<>
-			<h3>Chat</h3>
-			<RTCStatus rtc={chat.rtc} />
-			Chat status: {status}
 			<div
 				style={{
 					border: "1px solid black",
 					margin: 10,
-					width: 300,
+					width: 500,
 					display: "flex",
 					flexDirection: "column",
 				}}
 			>
-				<div>
+				<div style={{ padding: 5, backgroundColor: "black", color: "white" }}>
+					<strong>Chat</strong>
+				</div>
+				<div
+					style={{
+						padding: 5,
+						display: "flex",
+						flexDirection: "column-reverse",
+						overflowY: "scroll",
+						height: 200,
+						gap: 5,
+					}}
+				>
 					{messages.map((message) => (
-						<p key={message.id}>
-							[{getHHMM(message.date)} - {message.clientId}]{" "}
+						<div key={message.id}>
+							[{getHHMM(message.date)} - {message.clientId.slice(0, 6)}]{" "}
 							{message.data as string}
-						</p>
+						</div>
 					))}
 				</div>
-				<div>
+				<div style={{ flexGrow: 1, display: "flex" }}>
 					<input
+						style={{ flexGrow: 1 }}
 						type="text"
 						value={inputMsg}
 						onChange={(e) => setInputMsg(e.target.value)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") handleSend();
 						}}
+						disabled={status !== "open"}
+						placeholder={
+							status === "open" ? "Type a message..." : "Chat disconnected."
+						}
 					/>
 					<button onClick={handleSend}>Send</button>
 				</div>

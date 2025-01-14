@@ -14,6 +14,7 @@ class FBSignaler {
 		listenId: string,
 		onAnswer: (answer: RTCSessionDescriptionInit) => void
 	) {
+		console.log("HERE2");
 		const signalRef = doc(db, "signal", listenId);
 		const unsub = onSnapshot(signalRef, (doc) => {
 			const data = doc.data();

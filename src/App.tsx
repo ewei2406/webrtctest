@@ -1,5 +1,4 @@
 import { NavLink } from "react-router";
-import "./util/getMic";
 
 const App = () => {
 	return (
