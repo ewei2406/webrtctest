@@ -27,8 +27,11 @@ class MultiClient {
 				clientId: this.comm.rtc.id,
 			});
 			return { variant: "ok" };
-		} catch (error) {
-			return { variant: "error", error: (error as Error).message };
+		} catch {
+			return {
+				variant: "error",
+				error: `Failed to connect to host with ID "${targetId}". Is the host active?`,
+			};
 		}
 	}
 

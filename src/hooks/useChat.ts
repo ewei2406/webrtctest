@@ -20,7 +20,7 @@ const useChat = (authorId: string, dc: RTCDataChannel) => {
 	};
 
 	const addMessage = (mm: MultiMessage) => {
-		setMessages((prev) => [...prev, mm]);
+		setMessages((prev) => [mm, ...prev]);
 	};
 
 	useEffect(() => {

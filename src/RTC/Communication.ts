@@ -10,7 +10,7 @@ const COMM_DCINIT = [
 
 class Communication {
 	rtc: RTCBase;
-	unsub?: () => void;
+	unsub: () => void = () => {};
 
 	constructor() {
 		this.rtc = new RTCBase({
@@ -55,12 +55,6 @@ class Communication {
 
 	sendMessage(message: string): Result {
 		return this.rtc.sendMessage("chat", message);
-	}
-
-	close() {
-		this.unsub?.();
-		this.rtc.close();
-		FBSignaler.closeOffer(this.rtc.id);
 	}
 }
 
